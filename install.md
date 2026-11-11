@@ -56,3 +56,12 @@ Linux/Wayland only: needs `wl-paste` and `wl-copy` (package `wl-clipboard`).
 
 No keys needed. The popup is on exactly while the Annotate section is open, since the panel is
 what watches the selection.
+
+## Optional: workspace-save drawer and space menu
+
+If you also use [herdr-workspace-save](https://github.com/chandrasekharan98/herdr-workspace-save),
+its drawer and space right-click items can live in this same `annotate` layout. Follow
+"Optional: drawer and space menu" in that repo's `app/RECIPE.md`, applying it to
+`layouts/annotate.json` after step 2 above. It clones `spaces` and `menu` (as `spaces-annotate`
+and `menu-annotate`) and adds a floating drawer on the `main` node; it binds no keys and leaves
+the Annotate section and `tabs-annotate` alone.
