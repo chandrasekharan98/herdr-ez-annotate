@@ -1,13 +1,10 @@
 # Herdr Easy Annotate
 
-To install: run `python3 install.py` from this repository (`--uninstall` removes it). It copies
-`mods/ez-annotate`, re-forks the built-in `tabs` as `tabs-annotate` with an Annotate button,
-writes `layouts/annotate.json` and adds `keys.json`'s keys where free. If the `tabs` patch
-fails, apply the same edits by hand as described under "Built from".
-
 Select text in any terminal and a small bar pops up at the pointer: looks good, comment or
 delete. A sidebar on the right lists the focused pane's annotations as cards you can edit and
 delete, and sends them to that pane's coding agent as one compact message (or copies them).
+
+![Herdr Easy Annotate](preview.png)
 
 <!-- preview.png is an HTML recreation with sample content (docs/demo/), not a screenshot of a real window. -->
 
@@ -54,10 +51,13 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   ("n copied" / "n sent to agent", `dim`, with an Undo button) moves that set back.
 - Output: `Notes on your terminal output:`, then per annotation (oldest first, blank line
   between) `> ` quote lines, `✓ looks good` / `✗ remove/undo this`, and the comment.
+- While a copy or send runs, Copy all and Send to agent are replaced by "Copying…" /
+  "Sending…" and extra clicks are ignored, so one click sends once.
 - Agent status isn't shown.
 
 ## Built from
 
+- Install: run `python3 install.py` from this repository (`--uninstall` removes it). It copies `mods/ez-annotate`, re-forks the built-in `tabs` as `tabs-annotate` with an Annotate button, writes `layouts/annotate.json` and adds `keys.json`'s keys where free. If the `tabs` patch fails, apply the same edits by hand as described below.
 - One mod, `mods/ez-annotate/` (`main.js`, pure `lib.js`), `mod.json`
   `{"place":"none","title":"Herdr Easy Annotate"}`. Roles by `props().role`: none = the panel,
   `popup` = the bar, opened by the panel with `openOverlay({mod, kind:"popup", at:"pointer",
