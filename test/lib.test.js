@@ -1,7 +1,7 @@
 // node test/lib.test.js
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact } from "../mods/term-annotate/lib.js";
+import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact } from "../mods/ez-annotate/lib.js";
 
 const a = (id, sel, comment, createdAt, ctx = {}, kind) => ({ selectedText: sel, capturedAt: createdAt, context: ctx, id, comment, createdAt, ...(kind ? { kind } : {}) });
 const one = a("1", "  use the reply review.\n", "Is this the TUI?", "2026-10-30T06:00:57.177Z", { terminal_id: "t1" });

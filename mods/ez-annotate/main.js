@@ -1,21 +1,22 @@
-// term-annotate v2: comment on terminal text and hand the comments to a coding agent.
+// ez-annotate: comment on terminal text and hand the comments to a coding agent.
 //
 // One mod, two roles (props().role):
 //   (none)  the sidebar panel in a layout block. It lists the focused terminal's
-//           annotations and watches the PRIMARY selection to open the popup.
+//           annotations, watches the Linux PRIMARY selection to open the popup, and
+//           takes the `selection` command (a key) on every platform.
 //   popup   the bar at the selection: looks good (a) · comment (c) · delete (d).
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, TextareaState, Textarea } from "gpui-base";
 import {
   props, exec, theme, settings, notify, openOverlay, closeOverlay,
-  focused, spaces, agents, panes, appHome, window, layout, shared, setShared,
+  focused, spaces, agents, panes, appHome, window, layout, shared, setShared, run, nextCommand,
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
 import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT } from "./lib.js";
 
-const MOD = "term-annotate";
+const MOD = "ez-annotate";
 const ACTIVE = "annotations.jsonl";
 const ARCHIVE = "archives.jsonl";
 const REV = `${MOD}.rev`; // bumped after the popup saves, so the panel reloads
@@ -67,16 +68,26 @@ function record(selectedText, terminal, comment, kind) {
   return { selectedText, capturedAt: at, context: context(terminal), id: randomUUID(), comment, createdAt: at, ...(kind ? { kind } : {}) };
 }
 
-// ---- clipboard (Wayland) ---------------------------------------------------
+// ---- selection ---------------------------------------------------------------
 
+// Herdr copies a terminal selection to PRIMARY on Linux only (Wayland: wl-paste, X11: xclip).
 async function primary() {
-  const r = await exec("wl-paste", ["--primary", "--no-newline", "--type", "text"]);
+  const r = await exec("sh", ["-c", "wl-paste --primary --no-newline --type text 2>/dev/null || xclip -o -selection primary 2>/dev/null"]);
   return r.code === 0 ? r.stdout : "";
 }
-async function clipWrite(text) {
-  // wl-copy forks a server that would hold exec's pipes open; detach its output.
-  const r = await exec("sh", ["-c", 'printf %s "$1" | wl-copy >/dev/null 2>&1', "sh", text]);
-  if (r.code !== 0) throw new Error("wl-copy failed");
+
+// macOS and Windows have no PRIMARY: copy the focused terminal's selection through the
+// clipboard, then put the clipboard back. A sentinel tells "no selection" from "same text".
+// ponytail: restores text only; an image on the clipboard is lost. Fix if a selection API lands.
+async function copySelection(cx) {
+  const before = cx.read_from_clipboard();
+  const mark = `ez-annotate:${randomUUID()}`;
+  cx.write_to_clipboard(mark);
+  run("terminal.copy");
+  let text = mark;
+  for (let i = 0; i < 10 && text === mark; i++) { await sleep(cx, 50); text = cx.read_from_clipboard(); }
+  cx.write_to_clipboard(before ?? "");
+  return text === mark ? "" : text ?? "";
 }
 
 // ---- where a terminal is ---------------------------------------------------
@@ -109,7 +120,7 @@ const HINT = "Enter save · Shift+Enter new line · Esc cancel";
 
 // ---- view ------------------------------------------------------------------
 
-export default class TermAnnotate extends View {
+export default class EzAnnotate extends View {
   init(_props, cx) {
     const p = props() ?? {};
     this.role = p.role ?? "panel";
@@ -132,6 +143,7 @@ export default class TermAnnotate extends View {
     this.rev = shared(REV);
     this.reload(cx);
     this.watch(cx);
+    this.commands(cx);
   }
 
   async close() {
@@ -161,7 +173,7 @@ export default class TermAnnotate extends View {
   // Polls PRIMARY while this window is active and a terminal has focus. A selection opens the
   // popup once its text has held still for one poll. Coming back to the window, or closing the
   // popup, re-reads PRIMARY as the baseline, so other apps' and dismissed selections never pop.
-  // ponytail: a 250 ms wl-paste poll; switch to `wl-paste --primary --watch` if it ever shows up in CPU.
+  // ponytail: a 250 ms poll; switch to `wl-paste --primary --watch` if it ever shows up in CPU.
   watch(cx) {
     let last = null, pending = null;
     cx.spawn(async (cx) => {
@@ -171,12 +183,25 @@ export default class TermAnnotate extends View {
         const f = focused();
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
         const popupOpen = Date.now() - (Number(shared(POPUP)) || 0) < 300000;
-        if (!sectionOpen() || !window()?.active || !f?.terminal || popupOpen) { last = null; continue; }
+        if (window()?.platform !== "linux" || !sectionOpen() || !window()?.active || !f?.terminal || popupOpen) { last = null; continue; }
         const text = await primary();
         if (last === null || text === last) { last = text; pending = null; continue; }
         if (text !== pending) { pending = text; continue; }
         last = text; pending = null;
         if (text.trim() && focused()?.terminal === f.terminal) this.popup(text, f.terminal);
+      }
+    });
+  }
+
+  // "ez-annotate.selection" (a key): pop the focused terminal's selection.
+  commands(cx) {
+    cx.spawn(async (cx) => {
+      for (;;) {
+        if (await nextCommand() !== "selection") continue;
+        const term = focused()?.terminal;
+        const text = term ? await copySelection(cx) : "";
+        if (text.trim()) this.popup(text, term);
+        else toast("Annotate", "Select text in a terminal first.");
       }
     });
   }
@@ -220,8 +245,8 @@ export default class TermAnnotate extends View {
   }
 
   copyAll(list, cx) {
+    cx.write_to_clipboard(formatCompact(list));
     this.act(cx, async () => {
-      await clipWrite(formatCompact(list));
       this.undo = { set: await archive(list), term: this.term, text: `${list.length} copied` };
     });
   }
