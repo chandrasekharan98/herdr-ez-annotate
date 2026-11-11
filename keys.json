@@ -1,9 +1,1 @@
-{
-  "global": {
-    "ctrl-b a": "term-annotate.capture",
-    "ctrl-b t": "term-annotate.terminal",
-    "ctrl-b m": "term-annotate.manage",
-    "ctrl-b ctrl-s": "term-annotate.send-archive",
-    "ctrl-b ctrl-v": "term-annotate.paste-archive"
-  }
-}
+{}

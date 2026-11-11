@@ -1,17 +1,14 @@
 // term-annotate: comment on terminal text and hand the comments to a coding agent.
 //
 // One mod, four roles (props().role):
-//   (none)   opened by `mod.open`: starts the resident copy below and closes itself.
-//   daemon   an invisible kept 1x1 window. It exists so keys.json's
-//            "term-annotate.<command>" has a loaded copy to reach; it runs commands
-//            while the terminal still has the keyboard (terminal.copy / terminal.paste).
+//   (none)   opened by `mod.open`: opens the manager and closes itself.
 //   capture | terminal   the comment dialog (a selection, or recent terminal output).
 //   manage   the list of active and archived annotations.
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, TextareaState, Textarea, ScrollHandle } from "gpui-base";
 import {
-  props, run, exec, hc, theme, settings, notify, nextCommand, openOverlay, closeOverlay,
+  props, run, exec, hc, theme, settings, notify, openOverlay, closeOverlay,
   focused, spaces, agents, panes, appHome, home,
 } from "herdr";
 import * as fs from "fs/promises";
@@ -170,21 +167,9 @@ export default class TermAnnotate extends View {
     const p = props() ?? {};
     this.role = p.role;
     if (!this.role) {
-      // Opened by mod.open (absent under `herdr-app check`): become the resident copy.
-      if (p.overlay) {
-        openOverlay({ mod: MOD, kind: "window", frame: "none", key: MOD, keep: true, width: 1, height: 1, at: { x: 0, y: 0 }, props: { role: "daemon" } });
-        closeOverlay(p.overlay);
-        toast("Annotate ready", "ctrl-b a annotates a selection; ctrl-b m manages.");
-      }
-      return;
-    }
-    if (this.role === "daemon") {
-      cx.spawn(async (cx) => {
-        for (;;) {
-          const c = await nextCommand();
-          try { await COMMANDS[c]?.(cx); } catch (e) { toast("Annotate failed", String(e?.message ?? e), "error"); }
-        }
-      });
+      // Opened by mod.open (absent under `herdr-app check`): show the manager.
+      // The old invisible kept "daemon" window blocked the mouse; v2 lives in a layout panel.
+      if (p.overlay) { closeOverlay(p.overlay); COMMANDS.manage(cx); }
       return;
     }
     this.handle = cx.focus_handle();
@@ -250,7 +235,7 @@ export default class TermAnnotate extends View {
   }
 
   render(cx) {
-    if (!this.role || this.role === "daemon") return div();
+    if (!this.role) return div();
     const t = theme();
     const body = this.role === "manage" ? this.renderManage(t) : this.renderComment(t);
     return v_flex().id("ta-root").track_focus(this.handle).on_key_down((e, cx) => this.key(e, cx))
