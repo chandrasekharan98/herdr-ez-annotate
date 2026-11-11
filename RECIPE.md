@@ -10,8 +10,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 
 - **Popup** (420x46, Herdr's popup frame, `popover`): one row, 12.5px, three 30px items,
   `👍 looks good (a)`, `💬 comment (c)`, `✕ delete (d)`, the key hint in `dim` at 11px, `hover`
-  on hover. In comment mode the row is a 30px input (`accent` border, `background`) and a Save
-  button (`solid`).
+  on hover. Comment mode is a 420x170 popup: a growing comment box (1 to 6 rows,
+  10px/8px padding, `accent` border, `background`), the hint "Enter save · Shift+Enter new line ·
+  Esc cancel" in `dim` 10.5px, and a Save button (`solid`) at the right.
 - **Annotate section** in the side panel beside Files and Changes (a child of the `panel-body`
   stack in a clone of `main`), opened by an "Annotate" button in the top bar.
   - Header, 40px, bottom `border`: the pane's title (13px semibold, truncated) over
