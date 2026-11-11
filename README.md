@@ -6,7 +6,7 @@ like plannotator in the herdr TUI.
 - **Select text** in a terminal (drag). A small bar opens at the pointer:
   `👍 looks good (a)  💬 comment (c)  ✕ delete (d)`. Press the key or click. `c` turns the bar
   into a text field (Enter saves, Esc cancels). Esc or a click elsewhere dismisses it.
-- **The sidebar** (right of the panes) lists only the focused pane's annotations and follows
+- **The Annotate section** (side panel, beside Files and Changes) lists only the focused pane's annotations and follows
   focus. Click a card to select it and edit its comment (Enter or Save, Esc cancels); `✕` on the
   selected card deletes it. `+ Add` writes a free note for the pane. The selection
   popup is on while the Annotate section is open, and off when it is closed or another section shows.

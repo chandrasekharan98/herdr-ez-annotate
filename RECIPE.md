@@ -12,8 +12,8 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   `👍 looks good (a)`, `💬 comment (c)`, `✕ delete (d)`, the key hint in `dim` at 11px, `hover`
   on hover. In comment mode the row is a 30px input (`accent` border, `background`) and a Save
   button (`solid`).
-- **Sidebar panel** (320px block, `chrome`, radius 10, `border`) in a clone of `main`, after
-  `panel` in `work-body`.
+- **Annotate section** in the side panel beside Files and Changes (a child of the `panel-body`
+  stack in a clone of `main`), opened by an "Annotate" button in the top bar.
   - Header, 40px, bottom `border`: the pane's title (13px semibold, truncated) over
     "n annotation(s)" (10.5px `dim`).
   - Cards (`surface`, `border`, radius 8, 8px padding, gap 8, scrolls): an optional tag
@@ -51,10 +51,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   `{"place":"none","title":"Annotate"}`. Roles by `props().role`: none = the panel,
   `popup` = the bar, opened by the panel with `openOverlay({mod, kind:"popup", at:"pointer",
   width:420, height:46, props:{role:"popup", quote, terminal}})`.
-- Layout: a copy of `main.json` with
-  `{"id":"annotate","type":"block","size":{"px":320},"min":240,"max":640,"radius":10,
-  "border":{"width":1,"color":"border"},"background":"chrome","content":{"mod":"term-annotate"}}`
-  appended to `work-body`'s children (see install.md).
+- Layout: a copy of `main.json` with `{"id":"annotate","type":"block","content":{"mod":"term-annotate"}}`
+  appended to `panel-body`'s children, and its `tabs` block using `tabs-annotate`, a copy of the
+  built-in `tabs` mod with an Annotate button (see install.md).
 - Panel loop: `cx.spawn` + `cx.timer.after(250)`; `window().active`, `focused()`,
   `wl-paste --primary --no-newline --type text`. Shared keys: `term-annotate.auto` (false =
   off), `term-annotate.rev` (the popup bumps it after a save; the panel reloads),
