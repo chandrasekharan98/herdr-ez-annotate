@@ -1,7 +1,8 @@
-// Pure store and Markdown logic, shared with test/lib.test.js.
+// Pure store and formatting logic, shared with test/lib.test.js.
 // Records match the herdr TUI annotate plugin (annotations.jsonl / archives.jsonl):
-//   annotation: {selectedText, capturedAt, context, id, comment, createdAt}
+//   annotation: {selectedText, capturedAt, context, id, comment, createdAt, kind?}
 //   archive set: {version: 1, id, archivedAt, annotations: [annotation...]}
+// `kind` ("ok" | "delete") and `context.terminal_id` are v2 extras; the TUI ignores them.
 
 export function parseJsonl(text) {
   return (text ?? "").split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
@@ -23,37 +24,25 @@ export function mergeById(into, from) {
   return [...into, ...from.filter((r) => !ids.has(r.id))];
 }
 
-function fenceFor(text) {
-  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((s) => s.length));
-  return "`".repeat(Math.max(3, longest + 1));
+export function forTerminal(annotations, terminal) {
+  return captureOrder(annotations.filter((a) => a.context?.terminal_id === terminal));
 }
 
-// Same shape as the TUI's format_annotations, plus the source folder.
-export function formatMarkdown(annotations) {
-  const sections = annotations.map((a, i) => {
-    const c = a.context ?? {};
-    const source = [c.workspace_label, c.tab_label].filter(Boolean).join(" / ");
-    const where = source ? ` (${source})` : "";
-    const sel = (a.selectedText ?? "").replace(/^[\r\n]+|[\r\n]+$/g, "");
-    let quoted;
-    if (sel.includes("\n")) {
-      const f = fenceFor(sel);
-      quoted = `Comment on:\n${f}\n${sel}\n${f}`;
-    } else {
-      quoted = `Comment on: "${sel.trim()}"`;
-    }
-    const cwd = c.focused_pane_cwd ? `\nIn: \`${c.focused_pane_cwd}\`` : "";
-    const comment = (a.comment ?? "").trim().replace(/\r\n/g, "\n").replace(/\n/g, "\n> ");
-    return `## Annotation ${i + 1}${where}${cwd}\n${quoted}\n> ${comment}`;
-  });
-  return `# Annotations on terminal selections\n\n${sections.join("\n\n")}\n`;
+export const KIND_TEXT = { ok: "✓ looks good", delete: "✗ remove/undo this" };
+
+// A quote's non-blank lines, more than two cut to first, "…", last; each line at most `max` chars.
+export function trimQuote(text, max = 160) {
+  const lines = (text ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const cut = (l) => (l.length > max ? l.slice(0, max) + "…" : l);
+  return (lines.length > 2 ? [lines[0], "…", lines[lines.length - 1]] : lines).map(cut);
 }
 
-// Terminal output from `hc read`: right-trimmed, hc's own "[hc] ..." notes and trailing blank
-// lines dropped, last `max` lines.
-export function tailLines(text, max) {
-  const lines = (text ?? "").replace(/\r\n/g, "\n").split("\n").map((l) => l.replace(/\s+$/, ""))
-    .filter((l) => !l.startsWith("[hc] "));
-  while (lines.length && !lines[lines.length - 1]) lines.pop();
-  return lines.slice(-max);
+// One token-lean block for an agent: `> quote` lines, then the verdict and/or comment.
+export function formatCompact(annotations) {
+  const items = annotations.map((a) => [
+    ...trimQuote(a.selectedText).map((l) => `> ${l}`),
+    KIND_TEXT[a.kind],
+    (a.comment ?? "").trim(),
+  ].filter(Boolean).join("\n"));
+  return ["Notes on your terminal output:", ...items].join("\n\n");
 }

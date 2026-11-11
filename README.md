@@ -1,69 +1,68 @@
 # term-annotate
 
-A Herdr desktop-app mod: comment on terminal text and hand the comments to a coding
-agent. It replaces the herdr TUI `annotate` plugin's terminal-annotation actions with
-native dialogs.
+A Herdr desktop-app mod: comment on terminal text and hand the comments to a coding agent,
+like plannotator in the herdr TUI.
+
+- **Select text** in a terminal (drag). A small bar opens at the pointer:
+  `👍 looks good (a)  💬 comment (c)  ✕ delete (d)`. Press the key or click. `c` turns the bar
+  into a text field (Enter saves, Esc cancels). Esc or a click elsewhere dismisses it.
+- **The sidebar** (right of the panes) lists only the focused pane's annotations and follows
+  focus. Click a card to select it and edit its comment (Enter or Save, Esc cancels); `✕` on the
+  selected card deletes it. `+ Add` writes a free note for the pane. The header's
+  `Popup on/off` chip turns the selection popup off (remembered).
+- **Copy all** puts the pane's annotations on the clipboard; **Send to agent** types them into
+  that pane's agent and presses Enter (`hc send`), then archives them. On failure they stay.
+
+What is sent is one compact block:
+
+```
+Notes on your terminal output:
+
+> first line of the quote
+> …
+> last line of the quote
+Rename this to fooBar
+
+> npm test passed
+✓ looks good
+
+> rm -rf build
+✗ remove/undo this
+```
 
 ## Install
 
-1. Copy `mods/term-annotate/` to `~/.config/herdr-app/mods/term-annotate/`.
-2. Merge `keys.json` into `~/.config/herdr-app/keys.json` (`global` section). Don't
-   replace keys you already use.
-3. Start it once: `herdr-app do mod.open --name term-annotate`. That opens an invisible,
-   kept 1x1 window, which comes back on every start. Keys reach a mod only while a copy of
-   it is loaded, and this window is that copy. If the keys stop working (after a layout
-   switch, say), run the command again.
+See [install.md](install.md): copy the mod folder, clone `main.json` as `annotate.json` with the
+panel added. No keys.
 
-Linux/Wayland only for now: it uses `wl-copy` and `wl-paste` (package `wl-clipboard`).
-
-## Keys
-
-| Key | Command | What it does |
-|---|---|---|
-| `ctrl-b a` | `capture` | Annotate the focused terminal's selection |
-| `ctrl-b t` | `terminal` | Annotate the last 200 lines of the focused terminal (click / shift-click picks lines) |
-| `ctrl-b m` | `manage` | List annotations: edit, archive, delete, restore archives, copy, import from the TUI |
-| `ctrl-b ctrl-s` | `send-archive` | Send all annotations to the focused agent (`hc send`, presses Enter), then archive |
-| `ctrl-b ctrl-v` | `paste-archive` | Paste them into the focused agent's prompt without Enter, then archive |
-
-`copy-context` and `copy-archive` exist as commands (`term-annotate.copy-context`) and as
-buttons in the manager, with no default key.
-
-In the dialogs: Ctrl+Enter saves, Esc cancels.
+Linux/Wayland only: `wl-paste` / `wl-copy` (package `wl-clipboard`).
 
 ## Storage
 
 `~/.config/herdr-app/state/term-annotate/annotations.jsonl` (one annotation per line) and
-`archives.jsonl` (one archived set per line). The records use the TUI plugin's schema, so
-either side can read the other's:
+`archives.jsonl` (one archived set per line), in the TUI plugin's schema:
 
 ```json
-{"selectedText":"…","capturedAt":"ISO","context":{"workspace_id":"…","workspace_label":"…","tab_id":"…","tab_label":"…","focused_pane_id":"…","focused_pane_cwd":"…","focused_pane_agent":"…","terminal_id":"t7"},"id":"uuid","comment":"…","createdAt":"ISO"}
+{"selectedText":"…","capturedAt":"ISO","context":{"workspace_id":"…","workspace_label":"…","tab_id":"…","tab_label":"…","focused_pane_id":"…","focused_pane_cwd":"…","focused_pane_agent":"…","terminal_id":"t7"},"id":"uuid","comment":"…","createdAt":"ISO","kind":"ok"}
 {"version":1,"id":"uuid","archivedAt":"ISO","annotations":[ … ]}
 ```
 
-`terminal_id` is extra; the TUI ignores it. "Import from TUI" in the manager copies
-`~/.local/state/herdr/plugins/annotate/*.jsonl` in, skipping ids already present. It never
-changes the TUI's files.
+`terminal_id` and `kind` (`ok` | `delete`, absent for a comment) are extra; the TUI ignores them.
+v1 files are read as-is. When the pane's list is empty and the TUI store
+(`~/.local/state/herdr/plugins/annotate/`) exists, "Import from TUI" copies it in, skipping ids
+already present; imported annotations land on the focused pane. It never changes the TUI's files.
 
 ## Notes
 
-- There is no selection API. `capture` clears the clipboard, runs `terminal.copy` while the
-  terminal still has focus, and reads the clipboard. If nothing was selected it puts the old
-  text back. If the clipboard held an image, that image is lost.
-- `paste-archive` copies the Markdown to the clipboard and runs the app's `terminal.paste`.
-  `hc send` always presses Enter, and `hc keys` only presses named keys. The Markdown stays
-  on the clipboard afterwards.
-
-## TODO
-
-- Review the agent's last or newest reply (the TUI's `prefix+ctrl+o`, `prefix+shift+o`).
-  This needs a map from terminal to Claude session to find the transcript. `ctrl-b ctrl-o`
-  and `ctrl-b alt-o` are left free for it.
-- X11 and macOS clipboard support.
+- There is no selection API. The panel polls the Wayland PRIMARY selection (`wl-paste
+  --primary`, every 250 ms) while the Herdr window is active and a terminal has focus, and opens
+  the popup once the text holds still for one poll (so 250–500 ms after the mouse is released).
+  The popup opens at the pointer then, which is where the drag ended unless the mouse moved.
+- Selections made while the window was inactive, and one just dismissed, don't pop.
+- The popup works only while a layout with the panel shows.
+- Send refuses a pane that isn't an agent: `hc send` presses Enter, and a shell would run it.
 
 ## Test
 
-`node test/lib.test.js` checks the Markdown and JSONL logic. It also parses the TUI's
-archive file if there is one, read-only.
-`herdr-app check ~/.config/herdr-app/mods/term-annotate` checks the mod.
+`node test/lib.test.js` checks the formatter and JSONL logic (and parses the TUI's archive file
+if there is one, read-only). `herdr-app check mods/term-annotate` checks the mod.
