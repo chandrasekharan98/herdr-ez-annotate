@@ -163,10 +163,15 @@ export default class EzAnnotate extends View {
   }
 
   // Runs a store change from a click, then reloads.
-  act(cx, fn) {
+  // With `busy`, a second click before the first finishes is ignored: Copy all and Send would
+  // otherwise copy or send the same list again, since it stays shown until the reload.
+  act(cx, fn, busy) {
+    if (busy) { if (this.busy) return; this.busy = busy; cx.notify(); }
     cx.spawn(async (cx) => {
       try { await fn(); this.error = null; } catch (e) { this.error = errText(e); }
-      this.reload(cx);
+      try { this.all = await readJsonl(ACTIVE); } catch (e) { this.error = errText(e); }
+      this.busy = null;
+      cx.notify();
     });
   }
 
@@ -245,10 +250,11 @@ export default class EzAnnotate extends View {
   }
 
   copyAll(list, cx) {
+    if (this.busy) return;
     cx.write_to_clipboard(formatCompact(list));
     this.act(cx, async () => {
       this.undo = { set: await archive(list), term: this.term, text: `${list.length} copied` };
-    });
+    }, "Copying…");
   }
 
   send(list, cx) {
@@ -259,7 +265,7 @@ export default class EzAnnotate extends View {
       const r = await exec("hc", ["send", term, formatCompact(list)], { timeout: 120000 });
       if (r.code !== 0) return toast("Not sent", `${r.stderr.trim() || "hc send failed"}. Annotations kept.`, "error");
       this.undo = { set: await archive(list), term, text: `${list.length} sent to agent` };
-    });
+    }, "Sending…");
   }
 
   // ---- popup
@@ -388,7 +394,8 @@ export default class EzAnnotate extends View {
     const footer = h_flex().gap(6).px(12).py(8).items_center().border_t_1().border_color(t.border)
       .child(this.button(t, "ta-add", "+ Add", (cx) => this.startAdd(cx)))
       .child(div().flex_1())
-      .when(list.length > 0, (el) => el
+      .when(Boolean(this.busy), (el) => el.child(div().text_size(12).text_color(t.dim).child(this.busy)))
+      .when(list.length > 0 && !this.busy, (el) => el
         .child(this.button(t, "ta-copy", "Copy all", (cx) => this.copyAll(list, cx)))
         .child(this.button(t, "ta-send", "Send to agent", (cx) => this.send(list, cx), "primary")));
     return v_flex().id("ta-panel")
