@@ -9,11 +9,11 @@ import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import {
   props, exec, theme, settings, notify, openOverlay, closeOverlay,
-  focused, spaces, agents, panes, appHome, home, window, shared, setShared,
+  focused, spaces, agents, panes, appHome, window, shared, setShared,
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
-import { parseJsonl, toJsonl, mergeById, forTerminal, trimQuote, formatCompact, KIND_TEXT } from "./lib.js";
+import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT } from "./lib.js";
 
 const MOD = "term-annotate";
 const ACTIVE = "annotations.jsonl";
@@ -23,7 +23,6 @@ const REV = `${MOD}.rev`; // bumped after the popup saves, so the panel reloads
 const POPUP = `${MOD}.popup`; // when the popup opened; null once it closed
 const POLL_MS = 250;
 const dir = () => `${appHome()}/state/${MOD}`;
-const tuiDir = () => `${home()}/.local/state/herdr/plugins/annotate`;
 const now = () => new Date().toISOString();
 const sleep = (cx, ms) => new Promise((r) => cx.timer.after(ms, () => r()));
 const toast = (title, body, level = "info") => notify({ title, body, level, timeout: 4000 });
@@ -31,8 +30,8 @@ const errText = (e) => String(e?.message ?? e);
 
 // ---- store ---------------------------------------------------------------
 
-async function readJsonl(name, folder = dir()) {
-  const p = `${folder}/${name}`;
+async function readJsonl(name) {
+  const p = `${dir()}/${name}`;
   if (!(await fs.exists(p))) return [];
   return parseJsonl(await fs.readFile(p, "utf8")); // throws on a bad line: never overwrite what we can't read
 }
@@ -121,7 +120,6 @@ export default class TermAnnotate extends View {
     cx.spawn(async (cx) => {
       try {
         this.all = await readJsonl(ACTIVE);
-        this.tuiExists = (await fs.exists(`${tuiDir()}/${ACTIVE}`)) || (await fs.exists(`${tuiDir()}/${ARCHIVE}`));
         this.error = null;
       } catch (e) { this.error = errText(e); }
       cx.notify();
@@ -213,17 +211,6 @@ export default class TermAnnotate extends View {
       if (r.code !== 0) return toast("Not sent", `${r.stderr.trim() || "hc send failed"}. Annotations kept.`, "error");
       await archive(list);
       toast("Sent to agent", `${list.length} annotation(s) sent and archived.`, "success");
-    });
-  }
-
-  importTui(cx) {
-    // Copies the TUI plugin's store (never moves it); ids already here are skipped. Imported
-    // active annotations land on this pane, since they carry no terminal.
-    this.act(cx, async () => {
-      const tui = (await readJsonl(ACTIVE, tuiDir())).map((a) => ({ ...a, context: { ...a.context, terminal_id: a.context?.terminal_id ?? this.term } }));
-      await updateActive((all) => mergeById(all, tui));
-      await writeJsonl(ARCHIVE, mergeById(await readJsonl(ARCHIVE), await readJsonl(ARCHIVE, tuiDir())));
-      toast("Imported", `${tui.length} TUI annotation(s) copied.`, "success");
     });
   }
 
@@ -343,8 +330,7 @@ export default class TermAnnotate extends View {
         .child(Input.new(this.adding).h(28).px(8).rounded(7).border_1().border_color(t.input).bg(t.background).text_size(12.5)));
     }
     const empty = v_flex().p(16).gap(10).text_size(12).text_color(t.dim)
-      .child(this.term ? "Select text in this terminal to annotate it, or add a note." : "Focus a terminal.")
-      .when(Boolean(this.tuiExists), (el) => el.child(h_flex().child(this.button(t, "ta-import", "Import from TUI", (cx) => this.importTui(cx)))));
+      .child(this.term ? "Select text in this terminal to annotate it, or add a note." : "Focus a terminal.");
     const footer = h_flex().gap(6).px(12).py(8).items_center().border_t_1().border_color(t.border)
       .child(this.button(t, "ta-add", "+ Add", (cx) => this.startAdd(cx)))
       .child(div().flex_1())

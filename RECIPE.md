@@ -23,8 +23,7 @@ delete, and sends them to that pane's coding agent as one compact message (or co
     between when longer than two lines, each truncated), then the comment at 12.5px. Hover
     borders in `accent`. The selected card is `selected` with an `accent` border, a 20px `✕`
     top right, and its comment as an input with a Save button.
-  - Empty: "Select text in this terminal to annotate it, or add a note." and, when the TUI
-    store exists, "Import from TUI".
+  - Empty: "Select text in this terminal to annotate it, or add a note.".
   - Footer, top `border`: "+ Add" left; "Copy all" and "Send to agent" (`solid`) right, only
     when there are annotations. 26px buttons, radius 7.
 

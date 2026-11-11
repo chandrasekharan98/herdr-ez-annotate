@@ -1,7 +1,7 @@
 // node test/lib.test.js
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseJsonl, toJsonl, captureOrder, mergeById, forTerminal, trimQuote, formatCompact } from "../mods/term-annotate/lib.js";
+import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact } from "../mods/term-annotate/lib.js";
 
 const a = (id, sel, comment, createdAt, ctx = {}, kind) => ({ selectedText: sel, capturedAt: createdAt, context: ctx, id, comment, createdAt, ...(kind ? { kind } : {}) });
 const one = a("1", "  use the reply review.\n", "Is this the TUI?", "2026-10-30T06:00:57.177Z", { terminal_id: "t1" });
@@ -39,7 +39,6 @@ assert.deepEqual(trimQuote("x".repeat(5), 3), ["xxx…"]);
 assert.deepEqual(forTerminal([one, two, del, { id: "6", context: {} }], "t2").map((x) => x.id), ["4"]);
 assert.deepEqual(captureOrder([one, two]).map((x) => x.id), ["2", "1"]);
 assert.deepEqual(parseJsonl(toJsonl([one, two]) + "\n"), [one, two]);
-assert.deepEqual(mergeById([one], [one, two]).map((x) => x.id), ["1", "2"]);
 
 // The TUI's own archive file parses as-is (read only).
 try {

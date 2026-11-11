@@ -18,12 +18,6 @@ export function captureOrder(annotations) {
   return [...annotations].sort((a, b) => t(a) - t(b));
 }
 
-// Appends records whose id is not already present.
-export function mergeById(into, from) {
-  const ids = new Set(into.map((r) => r.id));
-  return [...into, ...from.filter((r) => !ids.has(r.id))];
-}
-
 export function forTerminal(annotations, terminal) {
   return captureOrder(annotations.filter((a) => a.context?.terminal_id === terminal));
 }

@@ -48,9 +48,7 @@ Linux/Wayland only: `wl-paste` / `wl-copy` (package `wl-clipboard`).
 ```
 
 `terminal_id` and `kind` (`ok` | `delete`, absent for a comment) are extra; the TUI ignores them.
-v1 files are read as-is. When the pane's list is empty and the TUI store
-(`~/.local/state/herdr/plugins/annotate/`) exists, "Import from TUI" copies it in, skipping ids
-already present; imported annotations land on the focused pane. It never changes the TUI's files.
+v1 files are read as-is.
 
 ## Notes
 
