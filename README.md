@@ -8,8 +8,8 @@ like plannotator in the herdr TUI.
   into a text field (Enter saves, Esc cancels). Esc or a click elsewhere dismisses it.
 - **The sidebar** (right of the panes) lists only the focused pane's annotations and follows
   focus. Click a card to select it and edit its comment (Enter or Save, Esc cancels); `✕` on the
-  selected card deletes it. `+ Add` writes a free note for the pane. The header's
-  `Popup on/off` chip turns the selection popup off (remembered).
+  selected card deletes it. `+ Add` writes a free note for the pane. The selection
+  popup is on while the Annotate section is open, and off when it is closed or another section shows.
 - **Copy all** puts the pane's annotations on the clipboard; **Send to agent** types them into
   that pane's agent and presses Enter (`hc send`), then archives them. On failure they stay.
 

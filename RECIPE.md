@@ -15,8 +15,7 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 - **Sidebar panel** (320px block, `chrome`, radius 10, `border`) in a clone of `main`, after
   `panel` in `work-body`.
   - Header, 40px, bottom `border`: the pane's title (13px semibold, truncated) over
-    "n annotation(s)" (10.5px `dim`); on the right a 22px pill "Popup on" (`selected`, a `done`
-    dot) or "Popup off" (`raised`, `dim` dot).
+    "n annotation(s)" (10.5px `dim`).
   - Cards (`surface`, `border`, radius 8, 8px padding, gap 8, scrolls): an optional tag
     ("✓ looks good" on `done`, "✗ remove/undo this" on `blocked`, 10.5px semibold), the quote
     in the terminal font at 11.5px `muted` on `background` (first and last line with "…"
@@ -33,7 +32,7 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   selection holds still. `a` / click saves a "looks good" annotation, `d` a "delete" one, `c`
   asks for a comment (Enter saves a non-empty one). Esc or a click elsewhere closes it. Every
   annotation stores the quote and the terminal.
-- No popup when the pill is off, the window isn't active, no terminal has focus, the
+- No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
   selection is blank or unchanged, or the popup is already open. Coming back to the window
   or closing the popup takes the current selection as already seen.
 - The list follows `focused().terminal` live; clicking the panel itself keeps the last pane.

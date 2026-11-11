@@ -47,8 +47,12 @@ Linux/Wayland only: needs `wl-paste` and `wl-copy` (package `wl-clipboard`).
    herdr-app status   # no layout.error, no mod error
    ```
 
+   Optional keys (`~/.config/herdr-app/keys.json`, global section): `"ctrl-b a": "tabs-annotate.annotate"`,
+   `"ctrl-b f": "tabs-annotate.files"`, `"ctrl-b g": "tabs-annotate.changes"`. To make them work, the copy
+   also needs a `nextCommand()` loop in `init` calling the same show/hide as its buttons.
+
    `ctrl-shift-l` (or `layout.switch --name main`) goes back; delete `layouts/annotate.json` and
    `mods/tabs-annotate` to remove it.
 
-No keys to bind. The popup works only while the Annotate section is open, since the panel is
+No keys needed. The popup is on exactly while the Annotate section is open, since the panel is
 what watches the selection.

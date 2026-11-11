@@ -9,7 +9,7 @@ import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import {
   props, exec, theme, settings, notify, openOverlay, closeOverlay,
-  focused, spaces, agents, panes, appHome, window, shared, setShared,
+  focused, spaces, agents, panes, appHome, window, layout, shared, setShared,
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -18,7 +18,6 @@ import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT }
 const MOD = "term-annotate";
 const ACTIVE = "annotations.jsonl";
 const ARCHIVE = "archives.jsonl";
-const AUTO = `${MOD}.auto`; // false: no popup on selection (shared, so it persists)
 const REV = `${MOD}.rev`; // bumped after the popup saves, so the panel reloads
 const POPUP = `${MOD}.popup`; // when the popup opened; null once it closed
 const POLL_MS = 250;
@@ -27,6 +26,12 @@ const now = () => new Date().toISOString();
 const sleep = (cx, ms) => new Promise((r) => cx.timer.after(ms, () => r()));
 const toast = (title, body, level = "info") => notify({ title, body, level, timeout: 4000 });
 const errText = (e) => String(e?.message ?? e);
+const findNode = (n, id) => n?.id === id ? n : (n?.children ?? []).reduce((r, c) => r ?? findNode(c, id), null);
+// The popup follows the Annotate section: on while it is the shown side-panel section.
+const sectionOpen = () => {
+  const root = layout(), panel = findNode(root, "panel");
+  return Boolean(panel && !panel.hidden && findNode(root, "panel-body")?.active === "annotate");
+};
 
 // ---- store ---------------------------------------------------------------
 
@@ -147,7 +152,7 @@ export default class TermAnnotate extends View {
         const f = focused();
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
         const popupOpen = Date.now() - (Number(shared(POPUP)) || 0) < 300000;
-        if (shared(AUTO) === false || !window()?.active || !f?.terminal || popupOpen) { last = null; continue; }
+        if (!sectionOpen() || !window()?.active || !f?.terminal || popupOpen) { last = null; continue; }
         const text = await primary();
         if (last === null || text === last) { last = text; pending = null; continue; }
         if (text !== pending) { pending = text; continue; }
@@ -314,16 +319,10 @@ export default class TermAnnotate extends View {
   renderPanel(t) {
     const list = this.term ? forTerminal(this.all, this.term) : [];
     const pane = panes().find((p) => p.terminal === this.term);
-    const auto = shared(AUTO) !== false;
     const header = h_flex().items_center().gap(8).px(12).h(40).border_b_1().border_color(t.border)
       .child(v_flex().flex_1().min_w(0)
         .child(div().text_size(13).font_semibold().truncate().child(pane?.title || this.term || "No terminal"))
-        .child(div().text_size(10.5).text_color(t.dim).child(`${list.length} annotation(s)`)))
-      .child(h_flex().id("ta-auto").h(22).px(8).gap(5).items_center().rounded(11).cursor_pointer().text_size(11)
-        .bg(auto ? t.selected : t.raised).text_color(auto ? t.foreground : t.dim).hover((s) => s.bg(t.hover))
-        .on_click(() => setShared(AUTO, !auto))
-        .child(div().w(6).h(6).rounded(3).bg(auto ? t.done : t.dim))
-        .child(auto ? "Popup on" : "Popup off"));
+        .child(div().text_size(10.5).text_color(t.dim).child(`${list.length} annotation(s)`)));
     const cards = list.map((a) => this.card(t, a));
     if (this.adding) {
       cards.unshift(v_flex().id("ta-add-card").p(8).rounded(8).border_1().border_color(t.accent).bg(t.selected)
