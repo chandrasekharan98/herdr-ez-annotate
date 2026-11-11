@@ -53,6 +53,14 @@ async function archive(list) {
   const set = { version: 1, id: randomUUID(), archivedAt: now(), annotations: list };
   await writeJsonl(ARCHIVE, [...(await readJsonl(ARCHIVE)), set]);
   await updateActive((all) => all.filter((a) => !ids.has(a.id)));
+  return set.id;
+}
+// Undo: takes an archive set back out and puts its annotations back in the list.
+async function unarchive(setId) {
+  const sets = await readJsonl(ARCHIVE), set = sets.find((x) => x.id === setId);
+  if (!set) return;
+  await writeJsonl(ARCHIVE, sets.filter((x) => x !== set));
+  await updateActive((all) => [...all, ...set.annotations.filter((a) => !all.some((b) => b.id === a.id))]);
 }
 function record(selectedText, terminal, comment, kind) {
   const at = now();
@@ -203,7 +211,7 @@ export default class TermAnnotate extends View {
   copyAll(list, cx) {
     this.act(cx, async () => {
       await clipWrite(formatCompact(list));
-      toast("Copied", `${list.length} annotation(s) copied.`, "success");
+      this.undo = { set: await archive(list), term: this.term, text: `${list.length} copied` };
     });
   }
 
@@ -214,8 +222,7 @@ export default class TermAnnotate extends View {
     this.act(cx, async () => {
       const r = await exec("hc", ["send", term, formatCompact(list)], { timeout: 120000 });
       if (r.code !== 0) return toast("Not sent", `${r.stderr.trim() || "hc send failed"}. Annotations kept.`, "error");
-      await archive(list);
-      toast("Sent to agent", `${list.length} annotation(s) sent and archived.`, "success");
+      this.undo = { set: await archive(list), term, text: `${list.length} sent to agent` };
     });
   }
 
@@ -330,6 +337,9 @@ export default class TermAnnotate extends View {
     }
     const empty = v_flex().p(16).gap(10).text_size(12).text_color(t.dim)
       .child(this.term ? "Select text in this terminal to annotate it, or add a note." : "Focus a terminal.");
+    const undo = this.undo?.term === this.term && h_flex().gap(8).px(12).py(6).items_center().border_t_1().border_color(t.border)
+      .text_size(11.5).text_color(t.dim).child(div().flex_1().child(this.undo.text))
+      .child(this.button(t, "ta-undo", "Undo", (cx) => { const u = this.undo; this.undo = null; this.act(cx, () => unarchive(u.set)); }));
     const footer = h_flex().gap(6).px(12).py(8).items_center().border_t_1().border_color(t.border)
       .child(this.button(t, "ta-add", "+ Add", (cx) => this.startAdd(cx)))
       .child(div().flex_1())
@@ -342,6 +352,7 @@ export default class TermAnnotate extends View {
       .child(header)
       .child(v_flex().id("ta-list").flex_1().min_h(0).overflow_y_scrollbar().p(10).gap(8)
         .children(cards.length ? cards : [empty]))
+      .when(Boolean(undo), (el) => el.child(undo))
       .when(Boolean(this.error), (el) => el.child(div().px(12).py(4).text_size(11.5).text_color(t.blocked).child(this.error)))
       .child(footer);
   }

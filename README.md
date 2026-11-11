@@ -11,7 +11,8 @@ like plannotator in the herdr TUI.
   selected card deletes it. `+ Add` writes a free note for the pane. The selection
   popup is on while the Annotate section is open, and off when it is closed or another section shows.
 - **Copy all** puts the pane's annotations on the clipboard; **Send to agent** types them into
-  that pane's agent and presses Enter (`hc send`), then archives them. On failure they stay.
+  that pane's agent and presses Enter (`hc send`). Either way they then leave the list (archived),
+  and an "n copied · Undo" bar brings them back. If sending fails they stay.
 
 What is sent is one compact block:
 

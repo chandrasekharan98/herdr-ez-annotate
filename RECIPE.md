@@ -39,8 +39,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 - Click a card: select and edit; Enter or Save stores the comment, Esc cancels. `✕` deletes at
   once. "+ Add": an input card on top; Enter stores a note with no quote (empty: nothing).
 - Copy all: the block below on the clipboard. Send to agent: refused with a toast unless the
-  pane is an agent; `hc send <terminal> <block>`; on success the pane's annotations move to
-  one archive set; on failure they stay and the error is toasted.
+  pane is an agent; `hc send <terminal> <block>`; on failure they stay and the error is toasted.
+  After either, the pane's annotations move to one archive set, and a bar above the footer
+  ("n copied" / "n sent to agent", `dim`, with an Undo button) moves that set back.
 - Output: `Notes on your terminal output:`, then per annotation (oldest first, blank line
   between) `> ` quote lines, `✓ looks good` / `✗ remove/undo this`, and the comment.
 - Agent status isn't shown.
