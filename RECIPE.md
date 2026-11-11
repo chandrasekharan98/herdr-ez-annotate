@@ -1,4 +1,4 @@
-# EZ Annotate
+# Herdr Easy Annotate
 
 To install: run `python3 install.py` from this repository (`--uninstall` removes it). It copies
 `mods/ez-annotate`, re-forks the built-in `tabs` as `tabs-annotate` with an Annotate button,
@@ -59,7 +59,7 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 ## Built from
 
 - One mod, `mods/ez-annotate/` (`main.js`, pure `lib.js`), `mod.json`
-  `{"place":"none","title":"EZ Annotate"}`. Roles by `props().role`: none = the panel,
+  `{"place":"none","title":"Herdr Easy Annotate"}`. Roles by `props().role`: none = the panel,
   `popup` = the bar, opened by the panel with `openOverlay({mod, kind:"popup", at:"pointer",
   width:420, height:46, props:{role:"popup", quote, terminal}})`.
 - Layout: a copy of `main.json` with `{"id":"annotate","type":"block","content":{"mod":"ez-annotate"}}`

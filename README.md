@@ -1,4 +1,4 @@
-# EZ Annotate for Herdr
+# Herdr Easy Annotate
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Herdr app 0.1.15+](https://img.shields.io/badge/herdr--app-0.1.15%2B-6e56cf)
@@ -155,7 +155,7 @@ plannotator's TUI plugin, plus `terminal_id` and `kind` (`ok` or `delete`; absen
 
 The select-then-comment flow, the "looks good / comment / delete" choices and the annotation
 format come from [herdr-annotate](https://github.com/plannotator/herdr-annotate), the herdr TUI
-plugin by [Plannotator](https://github.com/backnotprop/plannotator) (MIT). EZ Annotate brings
+plugin by [Plannotator](https://github.com/backnotprop/plannotator) (MIT). Herdr Easy Annotate brings
 that flow to the Herdr desktop app as a native mod. It shares no code with the plugin. If you
 like this, star [Plannotator](https://github.com/backnotprop/plannotator).
 

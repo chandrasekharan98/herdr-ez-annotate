@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install, update or remove EZ Annotate for the Herdr desktop app.
+"""Install, update or remove Herdr Easy Annotate for the Herdr desktop app.
 
     python3 install.py               install, or update (run it again)
     python3 install.py --uninstall   remove it; saved annotations stay
@@ -128,7 +128,7 @@ def install():
     herdr("check", str(mod))
     herdr("check", str(HOME / "mods" / TABS))
     switched = herdr("do", "layout.switch", "--name", LAYOUT)
-    print(f"\nEZ Annotate installed in {mod}")
+    print(f"\nHerdr Easy Annotate installed in {mod}")
     if not switched:
         print(f"Switch to the '{LAYOUT}' layout in Herdr (ctrl-shift-l).")
     if taken:
@@ -157,7 +157,7 @@ def uninstall():
     if keys and "global" in keys:
         keys["global"] = {k: v for k, v in keys["global"].items() if v != f"{MOD}.selection"}
         write_json(keys_path, keys)
-    print(f"EZ Annotate removed. Your annotations are still in {HOME / 'state' / MOD}.")
+    print(f"Herdr Easy Annotate removed. Your annotations are still in {HOME / 'state' / MOD}.")
 
 
 if __name__ == "__main__":
