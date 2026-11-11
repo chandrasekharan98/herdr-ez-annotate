@@ -4,7 +4,7 @@ Select text in any terminal and a small bar pops up at the pointer: looks good, 
 delete. A sidebar on the right lists the focused pane's annotations as cards you can edit and
 delete, and sends them to that pane's coding agent as one compact message (or copies them).
 
-<!-- No preview.png yet: it needs a screenshot from a real window. -->
+<!-- preview.png is an HTML recreation with sample content (docs/demo/), not a screenshot of a real window. -->
 
 ## What you see
 

@@ -3,6 +3,10 @@
 A Herdr desktop-app mod: comment on terminal text and hand the comments to a coding agent,
 like plannotator in the herdr TUI.
 
+![A recreation of the mod's UI with sample content: select terminal text, comment on it, mark a line as looks good, then send both notes to the Claude Code pane](docs/demo.gif)
+
+<sub>A recreation of the UI with sample content (`docs/demo/`), not a screen recording.</sub>
+
 - **Select text** in a terminal (drag). A small bar opens at the pointer:
   `👍 looks good (a)  💬 comment (c)  ✕ delete (d)`. Press the key or click. `c` turns the bar
   into a comment box (Enter saves, Shift+Enter adds a line, Esc cancels); card edits and
