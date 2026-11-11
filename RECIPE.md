@@ -30,7 +30,8 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 
 - Selecting text in a terminal (Herdr copies selections to PRIMARY) opens the popup once the
   selection holds still. `a` / click saves a "looks good" annotation, `d` a "delete" one, `c`
-  asks for a comment (Enter saves a non-empty one). Esc or a click elsewhere closes it. Every
+  swaps the bar for a 420x170 popup with a comment box (Enter saves a non-empty one,
+  Shift+Enter adds a line). Esc or a click elsewhere closes it. Every
   annotation stores the quote and the terminal.
 - No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
   selection is blank or unchanged, or the popup is already open. Coming back to the window

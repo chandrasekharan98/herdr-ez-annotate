@@ -6,7 +6,7 @@
 //   popup   the bar at the selection: looks good (a) · comment (c) · delete (d).
 
 import { View, div } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input } from "gpui-base";
+import { v_flex, h_flex, TextareaState, Textarea } from "gpui-base";
 import {
   props, exec, theme, settings, notify, openOverlay, closeOverlay,
   focused, spaces, agents, panes, appHome, window, layout, shared, setShared,
@@ -98,6 +98,15 @@ function context(terminal) {
   };
 }
 
+// A comment box: Enter saves, Shift+Enter adds a line.
+function commentState(value, placeholder, onSave) {
+  const s = TextareaState.new({ value, placeholder });
+  s.set_auto_grow(1, 6);
+  s.on("submit", (e, cx) => { if (e.shift) s.replace("\n"); else onSave(cx); });
+  return s;
+}
+const HINT = "Enter save · Shift+Enter new line · Esc cancel";
+
 // ---- view ------------------------------------------------------------------
 
 export default class TermAnnotate extends View {
@@ -106,17 +115,19 @@ export default class TermAnnotate extends View {
     this.role = p.role ?? "panel";
     this.handle = cx.focus_handle();
     if (this.role === "popup") {
-      this.input = null; // set in comment mode
-      if (p.overlay) setShared(POPUP, Date.now());
-      this.handle.focus();
-      cx.timer.after(300, () => { if (!this.input) this.handle.focus(); });
+      this.opened = Date.now();
+      if (p.overlay) setShared(POPUP, this.opened);
+      this.input = p.mode === "comment" ? commentState("", "Comment…", (cx) => this.savePopupComment(cx)) : null;
+      const focus = () => (this.input ? this.input.focus() : this.handle.focus());
+      focus();
+      cx.timer.after(300, focus);
       return;
     }
     this.term = focused()?.terminal ?? null;
     this.all = [];
     this.sel = null; // selected card id
-    this.edit = null; // its InputState
-    this.adding = null; // InputState of a new free note
+    this.edit = null; // its TextareaState
+    this.adding = null; // TextareaState of a new free note
     this.error = null;
     this.rev = shared(REV);
     this.reload(cx);
@@ -124,7 +135,7 @@ export default class TermAnnotate extends View {
   }
 
   async close() {
-    if (this.role === "popup") setShared(POPUP, null);
+    if (this.role === "popup" && shared(POPUP) === this.opened) setShared(POPUP, null);
   }
 
   // ---- panel: data
@@ -181,8 +192,7 @@ export default class TermAnnotate extends View {
     if (this.sel === a.id) return;
     this.cancel();
     this.sel = a.id;
-    this.edit = InputState.new({ value: a.comment ?? "", placeholder: "Comment…" });
-    this.edit.on("submit", (_e, cx) => this.saveEdit(cx));
+    this.edit = commentState(a.comment ?? "", "Comment…", (cx) => this.saveEdit(cx));
     this.edit.focus();
     cx.notify();
   }
@@ -196,16 +206,17 @@ export default class TermAnnotate extends View {
   startAdd(cx) {
     if (!this.term) return toast("Annotate", "Focus a terminal first.", "warning");
     this.cancel();
-    this.adding = InputState.new({ placeholder: "Note on this pane…" });
-    this.adding.on("submit", (_e, cx) => {
-      const comment = this.adding.value().trim();
-      const rec = record("", this.term, comment);
-      this.cancel();
-      if (comment) this.act(cx, () => updateActive((all) => [...all, rec]));
-      else cx.notify();
-    });
+    this.adding = commentState("", "Note on this pane…", (cx) => this.saveAdd(cx));
     this.adding.focus();
     cx.notify();
+  }
+
+  saveAdd(cx) {
+    const comment = this.adding.value().trim();
+    const rec = record("", this.term, comment);
+    this.cancel();
+    if (comment) this.act(cx, () => updateActive((all) => [...all, rec]));
+    else cx.notify();
   }
 
   copyAll(list, cx) {
@@ -238,14 +249,24 @@ export default class TermAnnotate extends View {
     });
   }
 
-  commentMode(cx) {
-    this.input = InputState.new({ placeholder: "Comment… (Enter saves, Esc cancels)" });
-    this.input.on("submit", (_e, cx) => {
-      const c = this.input.value().trim();
-      if (c) this.savePopup(cx, undefined, c);
-    });
-    this.input.focus();
-    cx.notify();
+  savePopupComment(cx) {
+    const c = this.input.value().trim();
+    if (c) this.savePopup(cx, undefined, c);
+  }
+
+  // Popups can't grow, so the comment box is a taller popup in the bar's place.
+  commentMode(_cx) {
+    const p = props();
+    openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 170, props: { role: "popup", mode: "comment", quote: p.quote, terminal: p.terminal } });
+    closeOverlay(p.overlay);
+  }
+
+  // The bordered box around a comment Textarea, with the key hint under it.
+  field(t, state, focused = true) {
+    return v_flex().w_full().gap(4)
+      .child(div().w_full().px(10).py(8).rounded(7).border_1().border_color(focused ? t.accent : t.input).bg(t.background)
+        .text_size(12.5).text_color(t.foreground).child(Textarea.new(state).w_full()))
+      .child(div().text_size(10.5).text_color(t.dim).child(HINT));
   }
 
   popupKey(e, cx) {
@@ -274,16 +295,14 @@ export default class TermAnnotate extends View {
   }
 
   renderPopup(t) {
+    if (this.input) {
+      return v_flex().id("ta-popup").track_focus(this.handle).on_key_down((e, cx) => this.popupKey(e, cx))
+        .size_full().p(10).gap(8).bg(t.popover).text_color(t.foreground).text_size(12.5)
+        .child(this.field(t, this.input))
+        .child(h_flex().justify_end().child(this.button(t, "ta-p-save", "Save", (cx) => this.savePopupComment(cx), "primary")));
+    }
     const root = h_flex().id("ta-popup").track_focus(this.handle).on_key_down((e, cx) => this.popupKey(e, cx))
       .size_full().px(8).gap(6).items_center().bg(t.popover).text_color(t.foreground).text_size(12.5);
-    if (this.input) {
-      return root
-        .child(Input.new(this.input).flex_1().h(30).px(8).rounded(7).border_1().border_color(t.accent).bg(t.background).text_size(12.5))
-        .child(this.button(t, "ta-p-save", "Save", (cx) => {
-          const c = this.input.value().trim();
-          if (c) this.savePopup(cx, undefined, c);
-        }, "primary"));
-    }
     const item = (id, label, key, fn) => h_flex().id(id).h(30).px(10).gap(6).items_center().rounded(7).cursor_pointer()
       .hover((s) => s.bg(t.hover)).on_click((_e, cx) => fn(cx))
       .child(label).child(div().text_color(t.dim).text_size(11).child(`(${key})`));
@@ -317,9 +336,9 @@ export default class TermAnnotate extends View {
         .font_family(this.mono()).text_size(11.5).text_color(t.muted)
         .children(quote.map((l, i) => div().id(`q-${a.id}-${i}`).truncate().child(l)))))
       .child(selected
-        ? h_flex().gap(6).items_center()
-            .child(Input.new(this.edit).flex_1().h(28).px(8).rounded(7).border_1().border_color(t.accent).bg(t.background).text_size(12.5))
-            .child(this.button(t, `s-${a.id}`, "Save", (cx) => this.saveEdit(cx), "primary"))
+        ? v_flex().gap(6)
+            .child(this.field(t, this.edit))
+            .child(h_flex().justify_end().child(this.button(t, `s-${a.id}`, "Save", (cx) => this.saveEdit(cx), "primary")))
         : a.comment ? div().text_size(12.5).child(a.comment) : div());
   }
 
@@ -333,7 +352,8 @@ export default class TermAnnotate extends View {
     const cards = list.map((a) => this.card(t, a));
     if (this.adding) {
       cards.unshift(v_flex().id("ta-add-card").p(8).rounded(8).border_1().border_color(t.accent).bg(t.selected)
-        .child(Input.new(this.adding).h(28).px(8).rounded(7).border_1().border_color(t.input).bg(t.background).text_size(12.5)));
+        .gap(6).child(this.field(t, this.adding))
+        .child(h_flex().justify_end().child(this.button(t, "ta-add-save", "Save", (cx) => this.saveAdd(cx), "primary"))));
     }
     const empty = v_flex().p(16).gap(10).text_size(12).text_color(t.dim)
       .child(this.term ? "Select text in this terminal to annotate it, or add a note." : "Focus a terminal.");
