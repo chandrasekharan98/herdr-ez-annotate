@@ -1,5 +1,6 @@
 # Herdr Easy Annotate
 
+[![Release](https://img.shields.io/github/v/release/chandrasekharan98/herdr-ez-annotate)](https://github.com/chandrasekharan98/herdr-ez-annotate/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Herdr app 0.1.15+](https://img.shields.io/badge/herdr--app-0.1.15%2B-6e56cf)
 ![Linux · macOS · Windows](https://img.shields.io/badge/platform-Linux%20%C2%B7%20macOS%20%C2%B7%20Windows-555)
@@ -115,7 +116,9 @@ of `~/.config/herdr-app/keys.json`:
 
 ## Update and uninstall
 
-- **Update:** run the installer again, or ask your Herdr agent to update the mod. This also
+- **Update:** an installed copy doesn't update itself. Watch the repository's releases on GitHub
+  (Watch → Custom → Releases) to hear about new versions, then run the installer again, or ask
+  your Herdr agent to update the mod. This also
   refreshes `tabs-annotate` from your current Herdr, so top-bar changes in Herdr updates are kept.
 - **Uninstall:** `python3 install.py --uninstall` (on Windows, run it with `py`). It removes the
   mod, `tabs-annotate`, the keys and the `annotate` layout, and switches back to `main`. Your
