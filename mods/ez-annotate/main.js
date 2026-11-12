@@ -126,7 +126,7 @@ export default class EzAnnotate extends View {
     this.role = p.role ?? "panel";
     this.handle = cx.focus_handle();
     if (this.role === "popup") {
-      this.opened = Date.now();
+      this.opened = p.opened ?? Date.now();
       if (p.overlay) setShared(POPUP, this.opened);
       this.input = p.mode === "comment" ? commentState("", "Comment…", (cx) => this.savePopupComment(cx)) : null;
       const focus = () => (this.input ? this.input.focus() : this.handle.focus());
@@ -175,9 +175,11 @@ export default class EzAnnotate extends View {
     });
   }
 
-  // Polls PRIMARY while this window is active and a terminal has focus. A selection opens the
-  // popup once its text has held still for one poll. Coming back to the window, or closing the
-  // popup, re-reads PRIMARY as the baseline, so other apps' and dismissed selections never pop.
+  // Polls PRIMARY while this window is active, a terminal has focus and the Annotate section is
+  // shown. A selection opens the popup once its text has held still for one poll. Coming back to
+  // the window, or closing the comment box, re-reads PRIMARY as the baseline, so other apps' and
+  // the comment box's own selections never pop. A new selection while the bar is open replaces
+  // it, and one made while the section was shut pops when it opens.
   // ponytail: a 250 ms poll; switch to `wl-paste --primary --watch` if it ever shows up in CPU.
   watch(cx) {
     let last = null, pending = null;
@@ -188,12 +190,16 @@ export default class EzAnnotate extends View {
         const f = focused();
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
         const popupOpen = Date.now() - (Number(shared(POPUP)) || 0) < 300000;
-        if (window()?.platform !== "linux" || !sectionOpen() || !window()?.active || !f?.terminal || popupOpen) { last = null; continue; }
+        const bar = popupOpen && shared(POPUP) === this.bar?.opened; // ours, not the comment box
+        if (window()?.platform !== "linux" || !window()?.active || !f?.terminal || (popupOpen && !bar)) { last = null; continue; }
+        if (!sectionOpen()) continue;
         const text = await primary();
         if (last === null || text === last) { last = text; pending = null; continue; }
         if (text !== pending) { pending = text; continue; }
         last = text; pending = null;
-        if (text.trim() && focused()?.terminal === f.terminal) this.popup(text, f.terminal);
+        if (!text.trim() || focused()?.terminal !== f.terminal) continue;
+        if (bar && shared(POPUP) === this.bar.opened) closeOverlay(this.bar.id);
+        this.popup(text, f.terminal);
       }
     });
   }
@@ -212,8 +218,9 @@ export default class EzAnnotate extends View {
   }
 
   popup(quote, terminal) {
-    setShared(POPUP, Date.now());
-    openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 46, props: { role: "popup", quote, terminal } });
+    const opened = Date.now();
+    setShared(POPUP, opened);
+    this.bar = { opened, id: openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 46, props: { role: "popup", quote, terminal, opened } }) };
   }
 
   cancel() { this.sel = null; this.edit = null; this.adding = null; }

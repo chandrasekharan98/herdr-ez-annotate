@@ -40,8 +40,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   same popup on every platform: it writes a sentinel to the clipboard, runs `terminal.copy`,
   waits up to 500 ms for the clipboard to change, then restores the old text.
 - No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
-  selection is blank or unchanged, or the popup is already open. Coming back to the window
-  or closing the popup takes the current selection as already seen.
+  selection is blank or unchanged, or the comment box is open. A new selection while the bar
+  is open replaces the bar; one made while the section was shut pops when it opens. Coming
+  back to the window or closing the comment box takes the current selection as already seen.
 - The list follows `focused().terminal` live; clicking the panel itself keeps the last pane.
 - Click a card: select and edit; Enter or Save stores the comment, Esc cancels. `✕` deletes at
   once. "+ Add": an input card on top; Enter stores a note with no quote (empty: nothing).
@@ -70,7 +71,8 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   built-in `tabs` mod with an Annotate button (see install.py, `patch_tabs`).
 - Panel loop: `cx.spawn` + `cx.timer.after(250)`; `window().active`, `focused()`,
   `wl-paste --primary` or `xclip -o -selection primary`, Linux only (`window().platform`). Shared keys: `ez-annotate.rev` (the popup bumps it after a save; the panel reloads),
-  `ez-annotate.popup` (open time; the popup's `close()` clears it, ignored after 5 min).
+  `ez-annotate.popup` (open time, passed to the popup as `opened`, so the panel tells its bar from
+  the comment box; the popup's `close()` clears it, ignored after 5 min).
 - `panes()` for the title and context, `agents()` for the send check, `hc send`, `cx.write_to_clipboard`. Store: `fs/promises` under
   `~/.config/herdr-app/state/ez-annotate/`, TUI JSONL schema plus `context.terminal_id`
   and `kind`.
@@ -80,7 +82,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 - Never use a hidden or 1x1 kept window for background work: it ate every mouse click in
   v1. The watcher lives in the visible panel.
 - The popup can't follow the selection, only the pointer, and opens 250–500 ms after release.
-- The popup's input can set PRIMARY itself; the panel doesn't poll while it is open.
+- The comment box's input can set PRIMARY itself; the panel doesn't poll while it is open.
+- Don't re-read the baseline when the bar closes: a click beside it that starts the next drag
+  would make that selection the baseline, and it would never pop.
 - `hc send` presses Enter; to a shell that would run `> comment` as a redirect. Keep the agent
   check.
 - Don't write the store under `mods/`: saving there reloads the mod.
