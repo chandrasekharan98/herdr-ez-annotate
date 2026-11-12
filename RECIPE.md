@@ -49,8 +49,11 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   pane is an agent; `hc send <terminal> <block>`; on failure they stay and the error is toasted.
   After either, the pane's annotations move to one archive set, and a bar above the footer
   ("n copied" / "n sent to agent", `dim`, with an Undo button) moves that set back.
-- Output: `Notes on your terminal output:`, then per annotation (oldest first, blank line
-  between) `> ` quote lines, `✓ looks good` / `✗ remove/undo this`, and the comment.
+- Output, in herdr-annotate's feedback shape so the agent reads it as annotations:
+  `# Annotations on terminal selections (<space> / <tab>)`, then per annotation (oldest
+  first, blank line between) `## Annotation N`, `Comment on: "<quote>"` (a quote spanning
+  lines is fenced, longer than any backtick run in it; quotes over two lines keep first, `…`,
+  last), then `✓ looks good` / `✗ remove/undo this` and the comment as `> ` lines.
 - While a copy or send runs, Copy all and Send to agent are replaced by "Copying…" /
   "Sending…" and extra clicks are ignored, so one click sends once.
 - Agent status isn't shown.
@@ -78,7 +81,7 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   v1. The watcher lives in the visible panel.
 - The popup can't follow the selection, only the pointer, and opens 250–500 ms after release.
 - The popup's input can set PRIMARY itself; the panel doesn't poll while it is open.
-- `hc send` presses Enter; to a shell that would run `> quote` as a redirect. Keep the agent
+- `hc send` presses Enter; to a shell that would run `> comment` as a redirect. Keep the agent
   check.
 - Don't write the store under `mods/`: saving there reloads the mod.
 

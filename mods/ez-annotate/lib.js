@@ -31,12 +31,22 @@ export function trimQuote(text, max = 160) {
   return (lines.length > 2 ? [lines[0], "…", lines[lines.length - 1]] : lines).map(cut);
 }
 
-// One token-lean block for an agent: `> quote` lines, then the verdict and/or comment.
+// A fence longer than any backtick run in the text, so quoted Markdown can't close it.
+const fence = (text) => "`".repeat(Math.max(3, ...(text.match(/`+/g) ?? []).map((r) => r.length + 1)));
+
+// Plannotator's feedback shape (herdr-annotate's format.rs), so the agent reads it as annotation
+// feedback, not the person typing: a `#` header naming where the notes come from, then
+// `## Annotation N`, `Comment on:` the quote (inline, or fenced when it spans lines), and the
+// verdict and comment as a `> ` blockquote. Quotes stay trimmed by trimQuote to keep it lean.
 export function formatCompact(annotations) {
-  const items = annotations.map((a) => [
-    ...trimQuote(a.selectedText).map((l) => `> ${l}`),
-    KIND_TEXT[a.kind],
-    (a.comment ?? "").trim(),
-  ].filter(Boolean).join("\n"));
-  return ["Notes on your terminal output:", ...items].join("\n\n");
+  const ctx = annotations[0]?.context ?? {};
+  const where = [ctx.workspace_label, ctx.tab_label].filter(Boolean).join(" / ");
+  const items = annotations.map((a, i) => {
+    const q = trimQuote(a.selectedText).join("\n");
+    const f = fence(q);
+    const quote = !q ? null : q.includes("\n") ? `Comment on:\n${f}\n${q}\n${f}` : `Comment on: "${q}"`;
+    const note = [KIND_TEXT[a.kind], (a.comment ?? "").trim()].filter(Boolean).join("\n");
+    return [`## Annotation ${i + 1}`, quote, note && note.replace(/^/gm, "> ")].filter(Boolean).join("\n");
+  });
+  return [`# Annotations on terminal selections${where ? ` (${where})` : ""}`, ...items].join("\n\n");
 }

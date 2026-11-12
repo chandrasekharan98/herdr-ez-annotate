@@ -11,28 +11,40 @@ const del = a("4", "rm -rf build", " and this ", "2026-10-30T08:00:00.000Z", { t
 const note = a("5", "", "General note", "2026-10-30T09:00:00.000Z", { terminal_id: "t2" });
 
 assert.equal(formatCompact(forTerminal([one, two, ok], "t1")),
-`Notes on your terminal output:
+`# Annotations on terminal selections
 
-> first
-> …
-> last
-Fix
-both
+## Annotation 1
+Comment on:
+\`\`\`
+first
+…
+last
+\`\`\`
+> Fix
+> both
 
-> use the reply review.
-Is this the TUI?
+## Annotation 2
+Comment on: "use the reply review."
+> Is this the TUI?
 
-> npm test passed
-✓ looks good`);
+## Annotation 3
+Comment on: "npm test passed"
+> ✓ looks good`);
 
-assert.equal(formatCompact([del, note]),
-`Notes on your terminal output:
+const where = { terminal_id: "t2", workspace_label: "api", tab_label: "server" };
+assert.equal(formatCompact([{ ...del, context: where }, note]),
+`# Annotations on terminal selections (api / server)
 
-> rm -rf build
-✗ remove/undo this
-and this
+## Annotation 1
+Comment on: "rm -rf build"
+> ✗ remove/undo this
+> and this
 
-General note`);
+## Annotation 2
+> General note`);
+
+// A quote with backticks gets a longer fence.
+assert.ok(formatCompact([a("7", "x ```y```\nz", "", "")]).includes("````\nx ```y```\nz\n````"));
 
 assert.deepEqual(trimQuote("a\nb"), ["a", "b"]);
 assert.deepEqual(trimQuote("x".repeat(5), 3), ["xxx…"]);

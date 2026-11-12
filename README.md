@@ -81,20 +81,26 @@ Python 3 is only needed by `install.py`, not by the mod.
 
 What the agent receives:
 
+````
+# Annotations on terminal selections (api / server)
+
+## Annotation 1
+Comment on:
 ```
-Notes on your terminal output:
-
-> first line of the quote
-> …
-> last line of the quote
-Rename this to fooBar
-
-> npm test passed
-✓ looks good
-
-> rm -rf build
-✗ remove/undo this
+first line of the quote
+…
+last line of the quote
 ```
+> Rename this to fooBar
+
+## Annotation 2
+Comment on: "npm test passed"
+> ✓ looks good
+
+## Annotation 3
+Comment on: "rm -rf build"
+> ✗ remove/undo this
+````
 
 ## Keys
 
