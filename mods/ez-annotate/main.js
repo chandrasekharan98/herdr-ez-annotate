@@ -71,9 +71,19 @@ function record(selectedText, terminal, comment, kind) {
 // ---- selection ---------------------------------------------------------------
 
 // Herdr copies a terminal selection to PRIMARY on Linux only (Wayland: wl-paste, X11: xclip).
+// Selecting the same text again leaves PRIMARY's text unchanged, so on Wayland one
+// `wl-paste --primary --watch` per user stamps a file each time PRIMARY is set; the stamp
+// changes even when the text does not. Returns "stamp\0text"; the stamp is empty without it.
+const STAMP = '"${XDG_RUNTIME_DIR:-/tmp}/ez-annotate-primary-$(id -u)"';
 async function primary() {
-  const r = await exec("sh", ["-c", "wl-paste --primary --no-newline --type text 2>/dev/null || xclip -o -selection primary 2>/dev/null"]);
-  return r.code === 0 ? r.stdout : "";
+  const r = await exec("sh", ["-c", `cat ${STAMP} 2>/dev/null; printf '\\0'; wl-paste --primary --no-newline --type text 2>/dev/null || xclip -o -selection primary 2>/dev/null`]);
+  return r.stdout.includes("\0") ? r.stdout : "\0";
+}
+// Starts the stamper unless one runs (flock); cheap to call again if it died.
+function stampPrimary() {
+  exec("sh", ["-c", `[ -n "$WAYLAND_DISPLAY" ] && command -v wl-paste >/dev/null && command -v flock >/dev/null || exit 0
+export F=${STAMP}
+setsid -f sh -c 'exec 9>"$F.lock"; flock -n 9 || exit 0; exec wl-paste --primary --watch sh -c "date +%s%N > \\"\\$F\\""' </dev/null >/dev/null 2>&1`]).catch(() => {});
 }
 
 // macOS and Windows have no PRIMARY: copy the focused terminal's selection through the
@@ -182,10 +192,11 @@ export default class EzAnnotate extends View {
   // it, and one made while the section was shut pops when it opens.
   // ponytail: a 250 ms poll; switch to `wl-paste --primary --watch` if it ever shows up in CPU.
   watch(cx) {
-    let last = null, pending = null;
+    let last = null, pending = null, n = 0;
     cx.spawn(async (cx) => {
       for (;;) {
         await sleep(cx, POLL_MS);
+        if (n++ % 40 === 0 && window()?.platform === "linux") stampPrimary();
         if (shared(REV) !== this.rev) { this.rev = shared(REV); this.reload(cx); }
         const f = focused();
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
@@ -193,10 +204,10 @@ export default class EzAnnotate extends View {
         const bar = popupOpen && shared(POPUP) === this.bar?.opened; // ours, not the comment box
         if (window()?.platform !== "linux" || !window()?.active || !f?.terminal || (popupOpen && !bar)) { last = null; continue; }
         if (!sectionOpen()) continue;
-        const text = await primary();
-        if (last === null || text === last) { last = text; pending = null; continue; }
-        if (text !== pending) { pending = text; continue; }
-        last = text; pending = null;
+        const seen = await primary(), text = seen.slice(seen.indexOf("\0") + 1);
+        if (last === null || seen === last) { last = seen; pending = null; continue; }
+        if (seen !== pending) { pending = seen; continue; }
+        last = seen; pending = null;
         if (!text.trim() || focused()?.terminal !== f.terminal) continue;
         if (bar && shared(POPUP) === this.bar.opened) closeOverlay(this.bar.id);
         this.popup(text, f.terminal);

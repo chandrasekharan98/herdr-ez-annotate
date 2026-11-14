@@ -83,6 +83,10 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   v1. The watcher lives in the visible panel.
 - The popup can't follow the selection, only the pointer, and opens 250–500 ms after release.
 - The comment box's input can set PRIMARY itself; the panel doesn't poll while it is open.
+- Selecting the same text again leaves PRIMARY's text unchanged. On Wayland the panel starts one
+  `wl-paste --primary --watch` per user (`setsid`, guarded by `flock`) that writes a timestamp to
+  `$XDG_RUNTIME_DIR/ez-annotate-primary-<uid>` each time PRIMARY is set; the panel compares
+  stamp + text. X11 has no watch, so a same-text reselection there still doesn't pop.
 - Don't re-read the baseline when the bar closes: a click beside it that starts the next drag
   would make that selection the baseline, and it would never pop.
 - `hc send` presses Enter; to a shell that would run `> comment` as a redirect. Keep the agent
