@@ -106,7 +106,7 @@ Comment on: "rm -rf build"
 
 | Key | What it does |
 | --- | --- |
-| `ctrl-shift-a` / `cmd-shift-a` | Annotate the focused terminal's selection |
+| `ctrl-shift-a` / `cmd-shift-a` | Open the Annotate section and annotate the focused terminal's selection |
 | `a` / `c` / `d` (in the bar) | Looks good / comment / delete |
 | Enter / Shift+Enter (in a comment) | Save / new line |
 | Esc | Close the bar, or cancel an edit |
@@ -137,8 +137,9 @@ of `~/.config/herdr-app/keys.json`:
   where the drag ended unless you moved the mouse.
 - **The key uses the clipboard on macOS and Windows.** It copies the selection, reads it, then
   puts your clipboard back. Only text is restored: an image on the clipboard is lost.
-- **The popup only works while the Annotate section is open.** The panel is what watches for
-  selections. The key works whenever the `annotate` layout is showing.
+- **The popup on select only works while the Annotate section is open.** The panel is what
+  watches for selections. The key works whenever the `annotate` layout is showing, and opens the
+  section first.
 - **Send refuses panes that aren't agents.** It presses Enter, and a shell would run the text.
 - **The top-bar button needs a forked `tabs` mod.** Herdr updates to `tabs` reach the fork only
   when you run the installer again.

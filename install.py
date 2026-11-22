@@ -13,7 +13,9 @@ from pathlib import Path
 REPO = "chandrasekharan98/herdr-ez-annotate"
 MOD, TABS, LAYOUT = "ez-annotate", "tabs-annotate", "annotate"
 HOME = Path(os.environ.get("EZ_ANNOTATE_HERDR_HOME") or Path.home() / ".config" / "herdr-app")
-KEYS = {"ctrl-shift-a": f"{MOD}.selection", "cmd-shift-a": f"{MOD}.selection"}
+# The key goes to the top bar, which is always shown, so it works with the panel closed.
+KEYS = {"ctrl-shift-a": f"{TABS}.selection", "cmd-shift-a": f"{TABS}.selection"}
+OLD_KEY = f"{MOD}.selection"  # what earlier versions bound
 BLOCK = {"id": "annotate", "type": "block", "content": {"mod": MOD}}
 
 
@@ -72,13 +74,20 @@ def patch_tabs():
 function togglePanel(id) {
   const root = layout(), panel = find(root, "panel"), body = find(root, "panel-body");
   if (panel && !panel.hidden && body?.active === id) run("layout.hide", { id: "panel" });
-  else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
+  else showPanel(id);
 }
+function showPanel(id) { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
+
+// fork: "tabs-annotate.selection" (the annotate key) shows the Annotate section and leaves the
+// request for its panel, which may not have started yet (see pendingSelection in ez-annotate).
+import { setShared as ezSetShared } from "herdr";
+function annotateSelection() { showPanel("annotate"); ezSetShared("ez-annotate.pending", Date.now()); }
 
 export default class""")
     sub("  init() {", """  init(_props, cx) {
-    // fork: keys.json "tabs-annotate.files" / ".changes" / ".annotate" toggle that section.
-    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (["files", "changes", "annotate"].includes(c)) togglePanel(c); cx.notify(); } });""")
+    // fork: keys.json "tabs-annotate.files" / ".changes" / ".annotate" toggle that section;
+    // "tabs-annotate.selection" annotates the focused terminal's selection.
+    cx.spawn(async (cx) => { for (;;) { const c = await nextCommand(); if (c === "selection") annotateSelection(); else if (["files", "changes", "annotate"].includes(c)) togglePanel(c); cx.notify(); } });""")
     sub('const enabled = shared("workspace.panels") ?? ["files", "changes"];',
         'const enabled = [...(shared("workspace.panels") ?? ["files", "changes"]), "annotate"]; // fork: ez-annotate')
     changes = '      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))\n'
@@ -121,6 +130,9 @@ def install():
     keys_path = HOME / "keys.json"
     keys = read_json(keys_path, {})
     glob = keys.setdefault("global", {})
+    for k in KEYS:
+        if glob.get(k) == OLD_KEY:
+            glob[k] = KEYS[k]
     taken = [k for k in KEYS if k in glob and glob[k] != KEYS[k]]
     glob.update({k: v for k, v in KEYS.items() if k not in glob})
     write_json(keys_path, keys)
@@ -132,7 +144,7 @@ def install():
     if not switched:
         print(f"Switch to the '{LAYOUT}' layout in Herdr (ctrl-shift-l).")
     if taken:
-        print(f"Already bound, left alone: {', '.join(taken)}. Bind '{MOD}.selection' yourself in keys.json.")
+        print(f"Already bound, left alone: {', '.join(taken)}. Bind '{TABS}.selection' yourself in keys.json.")
     print("Open the Annotate section in the top bar, then select text in a terminal.")
 
 
@@ -155,7 +167,7 @@ def uninstall():
     keys_path = HOME / "keys.json"
     keys = read_json(keys_path, None)
     if keys and "global" in keys:
-        keys["global"] = {k: v for k, v in keys["global"].items() if v != f"{MOD}.selection"}
+        keys["global"] = {k: v for k, v in keys["global"].items() if v not in (OLD_KEY, *KEYS.values())}
         write_json(keys_path, keys)
     print(f"Herdr Easy Annotate removed. Your annotations are still in {HOME / 'state' / MOD}.")
 

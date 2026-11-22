@@ -1,6 +1,6 @@
 {
   "global": {
-    "ctrl-shift-a": "ez-annotate.selection",
-    "cmd-shift-a": "ez-annotate.selection"
+    "ctrl-shift-a": "tabs-annotate.selection",
+    "cmd-shift-a": "tabs-annotate.selection"
   }
 }

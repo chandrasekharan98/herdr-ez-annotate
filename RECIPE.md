@@ -36,9 +36,15 @@ delete, and sends them to that pane's coding agent as one compact message (or co
   swaps the bar for a 420x170 popup with a comment box (Enter saves a non-empty one,
   Shift+Enter adds a line). Esc or a click elsewhere closes it. Every
   annotation stores the quote and the terminal.
-- The `selection` command (`ez-annotate.selection`, `ctrl-shift-a` / `cmd-shift-a`) opens the
-  same popup on every platform: it writes a sentinel to the clipboard, runs `terminal.copy`,
-  waits up to 500 ms for the clipboard to change, then restores the old text.
+- The annotate key (`ctrl-shift-a` / `cmd-shift-a`) is bound to `tabs-annotate.selection`,
+  because a mod's command reaches shown copies only and the top bar is always shown. The
+  `tabs-annotate` fork shows the Annotate section and sets the shared key `ez-annotate.pending`
+  to the time. The panel's loop takes a request up to 3 s old (`pendingSelection` in `lib.js`),
+  clears it, and opens the same popup as the `selection` command (`ez-annotate.selection`, kept
+  for keys bound by earlier versions, which the installer moves to the new command). That loop
+  runs while the panel is hidden too, and a panel shown for the first time starts it. Both
+  write a sentinel to the clipboard, run `terminal.copy`, wait up to 500 ms for the clipboard to
+  change, then restore the old text.
 - No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
   selection is blank or unchanged, or the comment box is open. A new selection while the bar
   is open replaces the bar; one made while the section was shut pops when it opens. Coming

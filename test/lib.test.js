@@ -1,7 +1,7 @@
 // node test/lib.test.js
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact } from "../mods/ez-annotate/lib.js";
+import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact, pendingSelection, PENDING_MAX_AGE_MS } from "../mods/ez-annotate/lib.js";
 
 const a = (id, sel, comment, createdAt, ctx = {}, kind) => ({ selectedText: sel, capturedAt: createdAt, context: ctx, id, comment, createdAt, ...(kind ? { kind } : {}) });
 const one = a("1", "  use the reply review.\n", "Is this the TUI?", "2026-10-30T06:00:57.177Z", { terminal_id: "t1" });
@@ -58,5 +58,13 @@ try {
   assert.ok(sets.every((s) => s.version === 1 && Array.isArray(s.annotations)));
   formatCompact(sets.flatMap((s) => s.annotations));
 } catch (e) { if (e.code !== "ENOENT") throw e; }
+
+// The key opens the Annotate section and leaves a pending request (its time) for the panel.
+assert.equal(pendingSelection(5000, 5000), true);
+assert.equal(pendingSelection(5000, 5000 + PENDING_MAX_AGE_MS), true);
+assert.equal(pendingSelection(5000, 5001 + PENDING_MAX_AGE_MS), false);
+assert.equal(pendingSelection(null, 5000), false);
+assert.equal(pendingSelection(undefined, 5000), false);
+assert.equal(pendingSelection(9000, 5000), false);
 
 console.log("ok");
