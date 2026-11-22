@@ -39,6 +39,12 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 - The `selection` command (`ez-annotate.selection`, `ctrl-shift-a` / `cmd-shift-a`) opens the
   same popup on every platform: it writes a sentinel to the clipboard, runs `terminal.copy`,
   waits up to 500 ms for the clipboard to change, then restores the old text.
+- With no Herdr selection on macOS and Windows, the key uses clipboard text that changed in the
+  last 30 s while the window was active, a terminal had focus and no popup was open (`trackClip`,
+  `clipFallback` in `lib.js`). Programs that take the mouse, such as Claude Code's fullscreen
+  mode, copy their own selection on release, so a plain drag still annotates. That text is used
+  once. The panel loop reads the clipboard every poll outside Linux, skips it while the key's
+  own sentinel is on the clipboard, and marks Copy all's own write as not fresh.
 - No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
   selection is blank or unchanged, or the comment box is open. A new selection while the bar
   is open replaces the bar; one made while the section was shut pops when it opens. Coming

@@ -1,7 +1,7 @@
 // node test/lib.test.js
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact } from "../mods/ez-annotate/lib.js";
+import { parseJsonl, toJsonl, captureOrder, forTerminal, trimQuote, formatCompact, trackClip, clipFallback, CLIP_MAX_AGE_MS } from "../mods/ez-annotate/lib.js";
 
 const a = (id, sel, comment, createdAt, ctx = {}, kind) => ({ selectedText: sel, capturedAt: createdAt, context: ctx, id, comment, createdAt, ...(kind ? { kind } : {}) });
 const one = a("1", "  use the reply review.\n", "Is this the TUI?", "2026-10-30T06:00:57.177Z", { terminal_id: "t1" });
@@ -58,5 +58,21 @@ try {
   assert.ok(sets.every((s) => s.version === 1 && Array.isArray(s.annotations)));
   formatCompact(sets.flatMap((s) => s.annotations));
 } catch (e) { if (e.code !== "ENOENT") throw e; }
+
+// The clipboard fallback for programs that take the mouse and copy a selection themselves.
+// The first read is the baseline: text already on the clipboard is never fresh.
+const base = trackClip(null, "old", true, 1000);
+assert.deepEqual(base, { text: "old", at: 1000, fresh: false });
+assert.equal(trackClip(base, "old", true, 2000), base);
+// A change while a terminal is watched is fresh; one made elsewhere is not.
+const dragged = trackClip(base, "dragged in claude", true, 2000);
+assert.deepEqual(dragged, { text: "dragged in claude", at: 2000, fresh: true });
+assert.equal(trackClip(base, "copied in a browser", false, 2000).fresh, false);
+assert.equal(trackClip(base, "   ", true, 2000).fresh, false);
+// Fresh text is used until it is older than CLIP_MAX_AGE_MS.
+assert.equal(clipFallback(dragged, 2000 + CLIP_MAX_AGE_MS), "dragged in claude");
+assert.equal(clipFallback(dragged, 2001 + CLIP_MAX_AGE_MS), "");
+assert.equal(clipFallback(base, 1000), "");
+assert.equal(clipFallback(null, 1000), "");
 
 console.log("ok");

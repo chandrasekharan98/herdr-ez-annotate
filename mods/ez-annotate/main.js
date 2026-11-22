@@ -2,8 +2,8 @@
 //
 // One mod, two roles (props().role):
 //   (none)  the sidebar panel in a layout block. It lists the focused terminal's
-//           annotations, watches the Linux PRIMARY selection to open the popup, and
-//           takes the `selection` command (a key) on every platform.
+//           annotations, watches the Linux PRIMARY selection to open the popup, tracks the
+//           clipboard elsewhere, and takes the `selection` command (a key) on every platform.
 //   popup   the bar at the selection: looks good (a) · comment (c) · delete (d).
 
 import { View, div } from "gpui-kit";
@@ -14,7 +14,7 @@ import {
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
-import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT } from "./lib.js";
+import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT, trackClip, clipFallback } from "./lib.js";
 
 const MOD = "ez-annotate";
 const ACTIVE = "annotations.jsonl";
@@ -202,6 +202,11 @@ export default class EzAnnotate extends View {
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
         const popupOpen = Date.now() - (Number(shared(POPUP)) || 0) < 300000;
         const bar = popupOpen && shared(POPUP) === this.bar?.opened; // ours, not the comment box
+        // copySelection's sentinel and the comment box are this mod's own clipboard writes.
+        if (window()?.platform !== "linux" && !this.copying) {
+          const watching = Boolean(window()?.active && f?.terminal && !popupOpen);
+          this.clip = trackClip(this.clip, cx.read_from_clipboard() ?? "", watching, Date.now());
+        }
         if (window()?.platform !== "linux" || !window()?.active || !f?.terminal || (popupOpen && !bar)) { last = null; continue; }
         if (!sectionOpen()) continue;
         const seen = await primary(), text = seen.slice(seen.indexOf("\0") + 1);
@@ -215,15 +220,22 @@ export default class EzAnnotate extends View {
     });
   }
 
-  // "ez-annotate.selection" (a key): pop the focused terminal's selection.
+  // "ez-annotate.selection" (a key): pop the focused terminal's selection. Without one, outside
+  // Linux, take text a mouse-capturing program copied in the last 30 s (see trackClip).
   commands(cx) {
     cx.spawn(async (cx) => {
       for (;;) {
         if (await nextCommand() !== "selection") continue;
         const term = focused()?.terminal;
-        const text = term ? await copySelection(cx) : "";
+        this.copying = true;
+        let text = term ? await copySelection(cx) : "";
+        this.copying = false;
+        if (term && !text.trim() && window()?.platform !== "linux") {
+          text = clipFallback(this.clip, Date.now());
+          if (text) this.clip = { ...this.clip, fresh: false };
+        }
         if (text.trim()) this.popup(text, term);
-        else toast("Annotate", "Select text in a terminal first.");
+        else toast("Annotate", "Select text in a terminal first. Where a program takes the mouse, hold Shift while dragging.");
       }
     });
   }
@@ -269,7 +281,9 @@ export default class EzAnnotate extends View {
 
   copyAll(list, cx) {
     if (this.busy) return;
-    cx.write_to_clipboard(formatCompact(list));
+    const block = formatCompact(list);
+    cx.write_to_clipboard(block);
+    this.clip = trackClip(this.clip, block, false, Date.now()); // our own copy is never fresh
     this.act(cx, async () => {
       this.undo = { set: await archive(list), term: this.term, text: `${list.length} copied` };
     }, "Copying…");

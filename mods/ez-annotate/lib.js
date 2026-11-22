@@ -50,3 +50,20 @@ export function formatCompact(annotations) {
   });
   return [`# Annotations on terminal selections${where ? ` (${where})` : ""}`, ...items].join("\n\n");
 }
+
+// Programs that take the mouse (Claude Code's fullscreen mode, vim with mouse=a) select and copy
+// text themselves, so Herdr has no selection to copy. The panel tracks the clipboard instead:
+// text that changed while a terminal had focus is fresh, and the key may use it for a while.
+export const CLIP_MAX_AGE_MS = 30000;
+
+// The next clipboard state. `watching`: this window is active and a terminal has focus.
+// The first read (no `prev`) is the baseline and never fresh.
+export function trackClip(prev, text, watching, now) {
+  if (prev && prev.text === text) return prev;
+  return { text, at: now, fresh: Boolean(prev && watching && text.trim()) };
+}
+
+// The fresh clipboard text, or "" when there is none or it is too old.
+export function clipFallback(state, now, maxAge = CLIP_MAX_AGE_MS) {
+  return state?.fresh && now - state.at <= maxAge ? state.text : "";
+}
