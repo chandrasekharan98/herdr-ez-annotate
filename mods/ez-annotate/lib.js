@@ -50,3 +50,22 @@ export function formatCompact(annotations) {
   });
   return [`# Annotations on terminal selections${where ? ` (${where})` : ""}`, ...items].join("\n\n");
 }
+
+// The character a key types on the popup bar, or null. Ctrl and Cmd chords type nothing. Option
+// types characters on many Mac layouts, and AltGr (Ctrl+Alt) does on Windows, so both count.
+export function typedChar(e, platform) {
+  const m = e.modifiers ?? {};
+  const altGr = platform === "windows" && m.control && m.alt;
+  if ((m.control && !altGr) || m.platform) return null;
+  const ch = e.key_char;
+  return typeof ch === "string" && ch.length > 0 && !/[\x00-\x1f\x7f]/.test(ch) ? ch : null;
+}
+
+// The comment box, as in herdr-annotate's editor: Cmd+Enter (Ctrl+Enter off macOS, which GPUI
+// reports as `secondary`) saves, and Enter adds a line.
+export function submitAction(e) {
+  return e?.secondary ? "save" : "newline";
+}
+export function saveHint(platform) {
+  return `${platform === "macos" ? "Cmd" : "Ctrl"}+Enter save · Enter new line · Esc cancel`;
+}

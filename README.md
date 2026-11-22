@@ -72,8 +72,8 @@ Python 3 is only needed by `install.py`, not by the mod.
    follows focus as you move between panes.
 2. Select text in a terminal. On Linux a small bar opens at the pointer by itself. On macOS and
    Windows, press `cmd-shift-a` (macOS) or `ctrl-shift-a`.
-3. Press `a` for **looks good**, `d` for **delete**, or `c` to **comment**. In a comment, Enter
-   saves and Shift+Enter starts a new line.
+3. Click **looks good** or **delete**, or start typing to **comment**. In a comment, Cmd+Enter
+   (Ctrl+Enter on Linux and Windows) saves and Enter starts a new line.
 4. Click a card to edit it, or click `✕` on the selected card to delete it. **+ Add** writes a
    note without a quote.
 5. Click **Send to agent** to type every note into the pane's agent and press Enter, or **Copy all**
@@ -107,8 +107,8 @@ Comment on: "rm -rf build"
 | Key | What it does |
 | --- | --- |
 | `ctrl-shift-a` / `cmd-shift-a` | Annotate the focused terminal's selection |
-| `a` / `c` / `d` (in the bar) | Looks good / comment / delete |
-| Enter / Shift+Enter (in a comment) | Save / new line |
+| Any character (in the bar) | Start a comment with it |
+| Cmd+Enter or Ctrl+Enter / Enter (in a comment) | Save / new line |
 | Esc | Close the bar, or cancel an edit |
 
 To toggle the side-panel sections from the keyboard, add any of these to the `global` section
