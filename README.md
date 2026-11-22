@@ -137,6 +137,10 @@ of `~/.config/herdr-app/keys.json`:
   where the drag ended unless you moved the mouse.
 - **The key uses the clipboard on macOS and Windows.** It copies the selection, reads it, then
   puts your clipboard back. Only text is restored: an image on the clipboard is lost.
+- **Programs that take the mouse select text themselves.** Claude Code's fullscreen mode and vim
+  with `mouse=a` keep a plain drag from reaching Herdr. On macOS and Windows the key then uses
+  text the program copied to the clipboard in the last 30 seconds while a terminal had focus.
+  Shift+drag makes a Herdr selection instead.
 - **The popup only works while the Annotate section is open.** The panel is what watches for
   selections. The key works whenever the `annotate` layout is showing.
 - **Send refuses panes that aren't agents.** It presses Enter, and a shell would run the text.
