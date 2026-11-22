@@ -14,13 +14,14 @@ import {
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
-import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT } from "./lib.js";
+import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT, pendingSelection } from "./lib.js";
 
 const MOD = "ez-annotate";
 const ACTIVE = "annotations.jsonl";
 const ARCHIVE = "archives.jsonl";
 const REV = `${MOD}.rev`; // bumped after the popup saves, so the panel reloads
 const POPUP = `${MOD}.popup`; // when the popup opened; null once it closed
+const PENDING = `${MOD}.pending`; // when the annotate key asked for the selection (tabs-annotate sets it)
 const POLL_MS = 250;
 const dir = () => `${appHome()}/state/${MOD}`;
 const now = () => new Date().toISOString();
@@ -200,6 +201,10 @@ export default class EzAnnotate extends View {
         if (shared(REV) !== this.rev) { this.rev = shared(REV); this.reload(cx); }
         const f = focused();
         if (f?.terminal && f.terminal !== this.term) { this.term = f.terminal; this.cancel(); cx.notify(); }
+        if (pendingSelection(shared(PENDING), Date.now()) && sectionOpen()) {
+          setShared(PENDING, null);
+          await this.annotateSelection(cx);
+        }
         const popupOpen = Date.now() - (Number(shared(POPUP)) || 0) < 300000;
         const bar = popupOpen && shared(POPUP) === this.bar?.opened; // ours, not the comment box
         if (window()?.platform !== "linux" || !window()?.active || !f?.terminal || (popupOpen && !bar)) { last = null; continue; }
@@ -215,17 +220,21 @@ export default class EzAnnotate extends View {
     });
   }
 
-  // "ez-annotate.selection" (a key): pop the focused terminal's selection.
+  // "ez-annotate.selection": pop the focused terminal's selection. The annotate key goes through
+  // tabs-annotate instead (PENDING), which also works while this panel is closed.
   commands(cx) {
     cx.spawn(async (cx) => {
       for (;;) {
-        if (await nextCommand() !== "selection") continue;
-        const term = focused()?.terminal;
-        const text = term ? await copySelection(cx) : "";
-        if (text.trim()) this.popup(text, term);
-        else toast("Annotate", "Select text in a terminal first.");
+        if (await nextCommand() === "selection") await this.annotateSelection(cx);
       }
     });
+  }
+
+  async annotateSelection(cx) {
+    const term = focused()?.terminal;
+    const text = term ? await copySelection(cx) : "";
+    if (text.trim()) this.popup(text, term);
+    else toast("Annotate", "Select text in a terminal first.");
   }
 
   popup(quote, terminal) {

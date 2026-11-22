@@ -50,3 +50,13 @@ export function formatCompact(annotations) {
   });
   return [`# Annotations on terminal selections${where ? ` (${where})` : ""}`, ...items].join("\n\n");
 }
+
+// The key goes to the top bar (`tabs-annotate.selection`), which is always shown. It opens the
+// Annotate section and stamps a pending request; the panel's loop takes it up within one poll,
+// even when the panel was hidden or had never been shown. A request older than this is dropped,
+// so a key pressed while the panel couldn't start never pops later.
+export const PENDING_MAX_AGE_MS = 3000;
+export function pendingSelection(stamp, now, maxAge = PENDING_MAX_AGE_MS) {
+  const at = Number(stamp);
+  return Boolean(stamp) && at <= now && now - at <= maxAge;
+}
