@@ -4,7 +4,7 @@
 //   (none)  the sidebar panel in a layout block. It lists the focused terminal's
 //           annotations, watches the Linux PRIMARY selection to open the popup, and
 //           takes the `selection` command (a key) on every platform.
-//   popup   the bar at the selection: click looks good or delete, or type to start a comment.
+//   popup   the comment box at the selection, with looks good, delete, and Save buttons.
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, TextareaState, Textarea } from "gpui-base";
@@ -14,7 +14,7 @@ import {
 } from "herdr";
 import * as fs from "fs/promises";
 import { randomUUID } from "crypto";
-import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT, typedChar, submitAction, saveHint } from "./lib.js";
+import { parseJsonl, toJsonl, forTerminal, trimQuote, formatCompact, KIND_TEXT, submitAction, saveHint } from "./lib.js";
 
 const MOD = "ez-annotate";
 const ACTIVE = "annotations.jsonl";
@@ -138,10 +138,10 @@ export default class EzAnnotate extends View {
     if (this.role === "popup") {
       this.opened = p.opened ?? Date.now();
       if (p.overlay) setShared(POPUP, this.opened);
-      const typed = p.typed ?? "";
-      this.input = p.mode === "comment" ? commentState(typed, "Comment…", (cx) => this.savePopupComment(cx)) : null;
-      if (typed) this.input.set_selected_range({ start: typed.length, end: typed.length });
-      const focus = () => (this.input ? this.input.focus() : this.handle.focus());
+      // One popup holds the comment box and the buttons. The box has the keyboard from
+      // the start, so no key is lost to a second popup opening.
+      this.input = commentState("", "Comment…", (cx) => this.savePopupComment(cx));
+      const focus = () => this.input.focus();
       focus();
       cx.timer.after(300, focus);
       return;
@@ -233,7 +233,7 @@ export default class EzAnnotate extends View {
   popup(quote, terminal) {
     const opened = Date.now();
     setShared(POPUP, opened);
-    this.bar = { opened, id: openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 46, props: { role: "popup", quote, terminal, opened } }) };
+    this.bar = { opened, id: openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 170, props: { role: "popup", quote, terminal, opened } }) };
   }
 
   cancel() { this.sel = null; this.edit = null; this.adding = null; }
@@ -305,14 +305,6 @@ export default class EzAnnotate extends View {
     if (c) this.savePopup(cx, undefined, c);
   }
 
-  // Popups can't grow, so the comment box is a taller popup in the bar's place.
-  // `typed`: the key that opened it by typing, already in the box.
-  commentMode(_cx, typed = "") {
-    const p = props();
-    openOverlay({ mod: MOD, kind: "popup", at: "pointer", width: 420, height: 170, props: { role: "popup", mode: "comment", quote: p.quote, terminal: p.terminal, typed } });
-    closeOverlay(p.overlay);
-  }
-
   // The bordered box around a comment Textarea, with the key hint under it.
   field(t, state, focused = true) {
     return v_flex().w_full().gap(4)
@@ -322,10 +314,7 @@ export default class EzAnnotate extends View {
   }
 
   popupKey(e, cx) {
-    if (e.key === "escape") { closeOverlay(props().overlay); cx.stop_propagation(); return; }
-    if (this.input) return;
-    const ch = typedChar(e, window()?.platform);
-    if (ch) { this.commentMode(cx, ch); cx.stop_propagation(); }
+    if (e.key === "escape") { closeOverlay(props().overlay); cx.stop_propagation(); }
   }
 
   // ---- render
@@ -346,22 +335,14 @@ export default class EzAnnotate extends View {
   }
 
   renderPopup(t) {
-    if (this.input) {
-      return v_flex().id("ta-popup").track_focus(this.handle).on_key_down((e, cx) => this.popupKey(e, cx))
-        .size_full().p(10).gap(8).bg(t.popover).text_color(t.foreground).text_size(12.5)
-        .child(this.field(t, this.input))
-        .child(h_flex().justify_end().child(this.button(t, "ta-p-save", "Save", (cx) => this.savePopupComment(cx), "primary")));
-    }
-    const root = h_flex().id("ta-popup").track_focus(this.handle).on_key_down((e, cx) => this.popupKey(e, cx))
-      .size_full().px(8).gap(6).items_center().bg(t.popover).text_color(t.foreground).text_size(12.5);
-    const item = (id, label, fn) => h_flex().id(id).h(30).px(10).gap(6).items_center().rounded(7).cursor_pointer()
-      .hover((s) => s.bg(t.hover)).on_click((_e, cx) => fn(cx)).child(label);
-    return root
-      .child(item("ta-p-ok", "👍 looks good", (cx) => this.savePopup(cx, "ok")))
-      .child(item("ta-p-c", "💬 comment", (cx) => this.commentMode(cx)))
-      .child(item("ta-p-d", "✕ delete", (cx) => this.savePopup(cx, "delete")))
-      .child(div().flex_1())
-      .child(div().text_color(t.dim).text_size(11).child("or type"));
+    return v_flex().id("ta-popup").track_focus(this.handle).on_key_down((e, cx) => this.popupKey(e, cx))
+      .size_full().p(10).gap(8).bg(t.popover).text_color(t.foreground).text_size(12.5)
+      .child(this.field(t, this.input))
+      .child(h_flex().gap(6).items_center()
+        .child(this.button(t, "ta-p-ok", "👍 looks good", (cx) => this.savePopup(cx, "ok")))
+        .child(this.button(t, "ta-p-d", "✕ delete", (cx) => this.savePopup(cx, "delete")))
+        .child(div().flex_1())
+        .child(this.button(t, "ta-p-save", "Save", (cx) => this.savePopupComment(cx), "primary")));
   }
 
   card(t, a) {

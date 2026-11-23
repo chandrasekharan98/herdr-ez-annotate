@@ -70,9 +70,9 @@ Python 3 is only needed by `install.py`, not by the mod.
 
 1. Click **Annotate** in the top bar. The side panel lists the focused pane's annotations and
    follows focus as you move between panes.
-2. Select text in a terminal. On Linux a small bar opens at the pointer by itself. On macOS and
+2. Select text in a terminal. On Linux a popup opens at the pointer by itself. On macOS and
    Windows, press `cmd-shift-a` (macOS) or `ctrl-shift-a`.
-3. Click **looks good** or **delete**, or start typing to **comment**. In a comment, Cmd+Enter
+3. Click **looks good** or **delete**, or type a **comment**. In a comment, Cmd+Enter
    (Ctrl+Enter on Linux and Windows) saves and Enter starts a new line.
 4. Click a card to edit it, or click `✕` on the selected card to delete it. **+ Add** writes a
    note without a quote.

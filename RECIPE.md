@@ -1,6 +1,6 @@
 # Herdr Easy Annotate
 
-Select text in any terminal and a small bar pops up at the pointer: looks good, comment or
+Select text in any terminal and a popup opens at the pointer: looks good, comment or
 delete. A sidebar on the right lists the focused pane's annotations as cards you can edit and
 delete, and sends them to that pane's coding agent as one compact message (or copies them).
 
@@ -10,10 +10,11 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 
 ## What you see
 
-- **Popup** (420x46, Herdr's popup frame, `popover`): one row, 12.5px, three 30px items,
-  `👍 looks good`, `💬 comment`, `✕ delete`, then "or type" right-aligned in `dim` at 11px,
-  `hover` on hover. Comment mode is a 420x170 popup: a growing comment box (1 to 6 rows,
-  10px/8px padding, `accent` border, `background`), the hint "Cmd+Enter save · Enter new line · Esc cancel" (Ctrl+Enter off macOS) in `dim` 10.5px, and a Save button (`solid`) at the right.
+- **Popup** (420x170, Herdr's popup frame, `popover`, 12.5px): a growing comment box (1 to 6
+  rows, 10px/8px padding, `accent` border, `background`) that has the keyboard as soon as the
+  popup opens, the hint "Cmd+Enter save · Enter new line · Esc cancel" (Ctrl+Enter off macOS)
+  in `dim` 10.5px, then a row of 26px buttons: `👍 looks good` and `✕ delete` at the left and
+  Save (`solid`) at the right.
 - **Annotate section** in the side panel beside Files and Changes (a child of the `panel-body`
   stack in a clone of `main`), opened by an "Annotate" button in the top bar.
   - Header, 40px, bottom `border`: the pane's title (13px semibold, truncated) over
@@ -31,12 +32,11 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 ## How it behaves
 
 - On Linux, selecting text in a terminal (Herdr copies selections to PRIMARY) opens the popup once the
-  selection holds still. Clicking looks good saves a "looks good" annotation, delete a "delete"
-  one, and comment swaps the bar for a 420x170 popup with a comment box (Cmd+Enter, Ctrl+Enter off macOS,
-  saves a non-empty one, Enter adds a line). Any key that types a character opens the comment box with that
-  character in it and the cursor after it (`typedChar` in `lib.js`). Ctrl and Cmd chords type
-  nothing. The bar has no letter shortcuts, so a comment can start with any letter. Esc or a
-  click elsewhere closes it. Every
+  selection holds still. Clicking looks good saves a "looks good" annotation and delete a
+  "delete" one. Typing goes straight into the comment box, which Cmd+Enter (Ctrl+Enter off
+  macOS) or Save saves when it is not empty, and Enter adds a line. The box and the buttons
+  share one popup, because a popup can't change size and a second popup would drop the keys
+  typed while it opened. Esc or a click elsewhere closes it. Every
   annotation stores the quote and the terminal.
 - The `selection` command (`ez-annotate.selection`, `ctrl-shift-a` / `cmd-shift-a`) opens the
   same popup on every platform: it writes a sentinel to the clipboard, runs `terminal.copy`,
