@@ -53,7 +53,8 @@ The installer:
 2. Adds an **Annotate** button beside Files and Changes in the top bar. Herdr's top bar can't be
    extended yet, so it makes a copy of the built-in `tabs` mod (`tabs-annotate`) and an
    `annotate` layout that uses it. Your `main` layout and the built-in `tabs` mod aren't touched.
-3. Binds `ctrl-shift-a` and `cmd-shift-a` to the selection key, unless you already use them.
+3. Binds `ctrl-shift-a` and `cmd-shift-a` to the selection key and `ctrl-shift-s` and `cmd-shift-s`
+   to the send key, unless you already use them.
 4. Switches to the `annotate` layout.
 
 ## Requirements
@@ -107,6 +108,7 @@ Comment on: "rm -rf build"
 | Key | What it does |
 | --- | --- |
 | `ctrl-shift-a` / `cmd-shift-a` | Annotate the focused terminal's selection |
+| `ctrl-shift-s` / `cmd-shift-s` | Send the focused terminal's annotations to its agent, as **Send to agent** does |
 | `a` / `c` / `d` (in the bar) | Looks good / comment / delete |
 | Enter / Shift+Enter (in a comment) | Save / new line |
 | Esc | Close the bar, or cancel an edit |

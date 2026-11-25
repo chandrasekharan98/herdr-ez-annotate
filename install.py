@@ -13,7 +13,8 @@ from pathlib import Path
 REPO = "chandrasekharan98/herdr-ez-annotate"
 MOD, TABS, LAYOUT = "ez-annotate", "tabs-annotate", "annotate"
 HOME = Path(os.environ.get("EZ_ANNOTATE_HERDR_HOME") or Path.home() / ".config" / "herdr-app")
-KEYS = {"ctrl-shift-a": f"{MOD}.selection", "cmd-shift-a": f"{MOD}.selection"}
+KEYS = {"ctrl-shift-a": f"{MOD}.selection", "cmd-shift-a": f"{MOD}.selection",
+        "ctrl-shift-s": f"{MOD}.send", "cmd-shift-s": f"{MOD}.send"}
 BLOCK = {"id": "annotate", "type": "block", "content": {"mod": MOD}}
 
 

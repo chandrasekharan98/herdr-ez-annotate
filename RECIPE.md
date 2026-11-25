@@ -39,6 +39,9 @@ delete, and sends them to that pane's coding agent as one compact message (or co
 - The `selection` command (`ez-annotate.selection`, `ctrl-shift-a` / `cmd-shift-a`) opens the
   same popup on every platform: it writes a sentinel to the clipboard, runs `terminal.copy`,
   waits up to 500 ms for the clipboard to change, then restores the old text.
+- The `send` command (`ez-annotate.send`, `ctrl-shift-s` / `cmd-shift-s`) sends the focused
+  terminal's annotations the way the **Send to agent** button does. A mod's command reaches shown
+  copies only, so the key works while the Annotate section is shown.
 - No popup when the Annotate section is closed or not the shown section, the window isn't active, no terminal has focus, the
   selection is blank or unchanged, or the comment box is open. A new selection while the bar
   is open replaces the bar; one made while the section was shut pops when it opens. Coming
