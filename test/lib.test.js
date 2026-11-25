@@ -59,4 +59,8 @@ try {
   formatCompact(sets.flatMap((s) => s.annotations));
 } catch (e) { if (e.code !== "ENOENT") throw e; }
 
+// install.py binds the send key next to the annotate key, on both modifier sets.
+const keys = readFileSync(new URL("../install.py", import.meta.url), "utf8").match(/^KEYS = \{([\s\S]*?)\}$/m)[1];
+for (const k of ["ctrl-shift-s", "cmd-shift-s"]) assert.match(keys, new RegExp(`"${k}": f"\\{MOD\\}\\.send"`));
+
 console.log("ok");

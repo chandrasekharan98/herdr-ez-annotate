@@ -216,10 +216,19 @@ export default class EzAnnotate extends View {
   }
 
   // "ez-annotate.selection" (a key): pop the focused terminal's selection.
+  // "send" sends the focused terminal's annotations, as the Send to agent button does. A command
+  // reaches only a shown panel, and the panel is shown while there are annotations to send.
   commands(cx) {
     cx.spawn(async (cx) => {
       for (;;) {
-        if (await nextCommand() !== "selection") continue;
+        const command = await nextCommand();
+        if (command === "send") {
+          const list = this.term ? forTerminal(this.all, this.term) : [];
+          if (list.length) this.send(list, cx);
+          else toast("Annotate", "No annotations to send for this terminal.");
+          continue;
+        }
+        if (command !== "selection") continue;
         const term = focused()?.terminal;
         const text = term ? await copySelection(cx) : "";
         if (text.trim()) this.popup(text, term);
